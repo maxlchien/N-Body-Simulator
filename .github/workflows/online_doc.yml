@@ -1,0 +1,34 @@
+name: Generate Markdown Documentation
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  Generate-Markdown:
+    runs-on: ubuntu-latest
+    steps:
+      # setup
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install project with doc deps
+        run: uv sync --group docs
+
+      # build
+      - name: Build Markdown Documentation
+        run: uv run sphinx-build -M markdown docs docs/_build
+      - name: Build HTML Documentation
+        run: uv run sphinx-build -M html docs docs/_build
+
+        # finalize
+      - name: Upload HTML result
+        uses: actions/upload-artifact@v4
+        with:
+          name: html_docs
+          path: docs/_build/html/*
+      - name: Append image to summary
+        run: cat docs/_build/markdown/api.md > $GITHUB_STEP_SUMMARY
