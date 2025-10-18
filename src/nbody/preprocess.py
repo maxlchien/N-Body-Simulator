@@ -1,15 +1,19 @@
+from __future__ import annotations
+
+from typing import Any
+
 import yaml
-from typing import List, Tuple, Dict, Any
 from body import Body
-#the following class is commented out because the module has not been developed yet
-#from generate_bodies import generate_random_bodies
+
+# the following class is commented out because the module has not been developed yet
+# from generate_bodies import generate_random_bodies
 
 
-def read_simulation_config(filename: str) -> Tuple[List[Body], Dict[str, Any]]:
+def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
     """Read bodies from yaml configuration file. If no bodies are provided,
     generate random ones using an external generator."""
 
-    with open(filename, "r") as f:
+    with open(filename) as f:
         data = yaml.safe_load(f) or {}
 
     sim_params = data.get("simulation", {})
@@ -20,8 +24,8 @@ def read_simulation_config(filename: str) -> Tuple[List[Body], Dict[str, Any]]:
         # In case no bodies are provided: generate random ones
         n_bodies = sim_params.get("n_bodies", 5)
         print(f"No bodies in input file, generating {n_bodies} random ones.")
-        #comment this out when module actually gets developed
-        #bodies = generate_random_bodies(n_bodies)
+        # comment this out when module actually gets developed
+        # bodies = generate_random_bodies(n_bodies)
     else:
         # Bodies provided: construct from YAML
         bodies = [
