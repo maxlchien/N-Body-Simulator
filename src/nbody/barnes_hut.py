@@ -230,8 +230,14 @@ class Tree:
             dist = np.linalg.norm(node.center_of_mass - other.position)
             # accept any cube with l/D < theta
             length = node.length
-            if dist == 0:
-                continue
+            if (
+                dist == 0
+            ):  # if a cube happens to have center of mass at the point, examine children, unless
+                # it is a point cube
+                if node.children:
+                    stack.extend(node.children)
+                else:
+                    continue
             if length / dist < theta:
                 dir = (node.center_of_mass - other.position) / dist
                 accel += dir * G * node.mass / (dist**2)
