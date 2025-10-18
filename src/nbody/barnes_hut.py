@@ -20,7 +20,13 @@ class Tree:
         Node (class): A tree node representing a dyadic cube, with links to the points contained, center of mass,
             total mass, and children.
         root (Node): The initial dyadic cube.
+
+        MAX_DEPTH (int): Maximum tree depth before terminating splitting. Defaults to 500.
+        MIN_LENGTH (float): Minimum sielength before terminating splitting. Defaults to 1e-8.
     """
+
+    max_depth: int = 500
+    min_length: float = 1e-8
 
     @dataclass
     class Node:
@@ -35,6 +41,7 @@ class Tree:
             center_of_mass (np.ndarray, optional): The center of mass of the points in the cube.
             mass (float, optional): The total mass of the points in the cube.
             children (list, optional): A list of the child nodes.
+            depth (int): The tree depth of the Node
         """
 
         coord: np.ndarray
@@ -46,7 +53,9 @@ class Tree:
         mass: float = None
         children: list = None
 
-        def compute_masses(self):
+        depth: int = 0
+
+        def compute_masses(self) -> None:
             """
             Recursively compute center of mass and mass values from child nodes.
             """
@@ -64,7 +73,7 @@ class Tree:
             self.center_of_mass = com / m
             self.mass = m
 
-        def __str__(self):
+        def __str__(self) -> str:
             if len(self.points) == 1:
                 s = f"Node: {self.points}"
             else:
@@ -82,7 +91,7 @@ class Tree:
 
     root: Node
 
-    def split(node: Node) -> list[Node]:
+    def split(self, node: Node) -> list[Node]:
         """
         If the passed node contains more than one point, subdivide into eight subdyadic cubes and sort the points into
             the subcubes. Cull the empty subcubes.
@@ -95,7 +104,10 @@ class Tree:
         """
         if len(node.points) <= 1:
             return []
-
+        if node.depth > self.max_depth:
+            return []
+        if node.length < self.min_length:
+            return []
         x = node.coord[0]
         y = node.coord[1]
         z = node.coord[2]
@@ -104,40 +116,60 @@ class Tree:
         zmid = node.coord[2] + node.length / 2
 
         nodelll = Tree.Node(
-            coord=np.array([x, y, z]), length=node.length / 2, points=[], parent=node
+            coord=np.array([x, y, z]),
+            length=node.length / 2,
+            points=[],
+            parent=node,
+            depth=node.depth + 1,
         )
         nodellr = Tree.Node(
-            coord=np.array([x, y, zmid]), length=node.length / 2, points=[], parent=node
+            coord=np.array([x, y, zmid]),
+            length=node.length / 2,
+            points=[],
+            parent=node,
+            depth=node.depth + 1,
         )
         nodelrl = Tree.Node(
-            coord=np.array([x, ymid, z]), length=node.length / 2, points=[], parent=node
+            coord=np.array([x, ymid, z]),
+            length=node.length / 2,
+            points=[],
+            parent=node,
+            depth=node.depth + 1,
         )
         nodelrr = Tree.Node(
             coord=np.array([x, ymid, zmid]),
             length=node.length / 2,
             points=[],
             parent=node,
+            depth=node.depth + 1,
         )
         noderll = Tree.Node(
-            coord=np.array([xmid, y, z]), length=node.length / 2, points=[], parent=node
+            coord=np.array([xmid, y, z]),
+            length=node.length / 2,
+            points=[],
+            parent=node,
+            depth=node.depth + 1,
         )
         noderlr = Tree.Node(
             coord=np.array([xmid, y, zmid]),
             length=node.length / 2,
             points=[],
             parent=node,
+            depth=node.depth + 1,
         )
         noderrl = Tree.Node(
             coord=np.array([xmid, ymid, z]),
             length=node.length / 2,
             points=[],
             parent=node,
+            depth=node.depth + 1,
         )
         noderrr = Tree.Node(
             coord=np.array([xmid, ymid, zmid]),
             length=node.length / 2,
             points=[],
             parent=node,
+            depth=node.depth + 1,
         )
 
         for point in node.points:  # use the convention of half open intervals [a,b)
@@ -169,7 +201,7 @@ class Tree:
         ]  # cull empty nodes
         return node.children
 
-    def recursive_split(root: Node):
+    def recursive_split(self, root: Node) -> None:
         """
         Recursively split the root node until the tree is completely generated.
 
@@ -179,13 +211,26 @@ class Tree:
         stack = [root]
         while stack:
             node = stack.pop()
-            stack += Tree.split(node)
+            stack += self.split(node)
 
-    def __init__(self, points: list[Body]):
+    def __init__(
+        self,
+        points: list[Body],
+        max_depth: int | None = None,
+        min_length: float | None = None,
+    ):
         """
         Arguments:
             points (list[Body]): The bodies in the system to be subdivided.
+
+            max_depth (int, optional): The maximum depth before terminating node splitting. May be infinity.
+            min_length (float, optional): The minimum cube sidelength before terminating node splitting. May be zero.
         """
+        if max_depth is not None:
+            self.max_depth = max_depth
+        if min_length is not None:
+            self.min_length = min_length
+
         xvals = [p.position[0] for p in points]
         yvals = [p.position[1] for p in points]
         zvals = [p.position[2] for p in points]
@@ -200,13 +245,13 @@ class Tree:
         base_length = 2 * max(
             xmax - xmin, ymax - ymin, zmax - zmin
         )  # double length to avoid issues with the half interval convention
-        self.root = Tree.Node(
+        self.root = self.Node(
             coord=np.array([xmin, ymin, zmin]),
             length=base_length,
             points=points,
             parent=None,
         )
-        Tree.recursive_split(self.root)
+        self.recursive_split(self.root)
         self.root.compute_masses()
 
     def compute_accel(self, other: Body, theta: float = 1, G: float = 6.6743e-11):
