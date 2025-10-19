@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
-from pathlib import Path
 from body import Body
 
 
@@ -275,7 +275,9 @@ class Tree:
             dist = np.linalg.norm(node.center_of_mass - other.position)
             # accept any cube with l/D < theta
             length = node.length
-            if np.isclose(dist, 0): # if a cube happens to have center of mass at the point, examine children, unless
+            if np.isclose(
+                dist, 0
+            ):  # if a cube happens to have center of mass at the point, examine children, unless
                 # it is a point cube
                 if node.children:
                     stack.extend(node.children)
@@ -327,12 +329,11 @@ class BarnesHutPropagator:
             writer = csv.writer(f)
             # The header line
             header = ["Iteration", "t"] + [
-            f"Body {i} {prop} ({axis})"
-            for i in range(1, len(bodies) + 1)
-            for prop in ("position", "velocity", "acceleration")
-            for axis in ("x", "y", "z")
+                f"Body {i} {prop} ({axis})"
+                for i in range(1, len(bodies) + 1)
+                for prop in ("position", "velocity", "acceleration")
+                for axis in ("x", "y", "z")
             ]
-                )
             writer.writerow(header)
 
             for i in range(t_max):
