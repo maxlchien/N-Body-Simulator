@@ -4,7 +4,7 @@ import csv
 from dataclasses import dataclass
 
 import numpy as np
-import Path
+from pathlib import Path
 from body import Body
 
 
@@ -275,9 +275,7 @@ class Tree:
             dist = np.linalg.norm(node.center_of_mass - other.position)
             # accept any cube with l/D < theta
             length = node.length
-            if (
-                dist == 0
-            ):  # if a cube happens to have center of mass at the point, examine children, unless
+            if np.isclose(dist, 0): # if a cube happens to have center of mass at the point, examine children, unless
                 # it is a point cube
                 if node.children:
                     stack.extend(node.children)
@@ -325,23 +323,15 @@ class BarnesHutPropagator:
 
         path = Path(output_file)
         path.parent.mkdir(exist_ok=True, parents=True)
-        with Path.open(path, "w") as f:
+        with path.open("w", newline="") as f:
             writer = csv.writer(f)
             # The header line
-            header = ["Iteration", "t"]
-            for i in range(1, len(bodies) + 1):
-                header.extend(
-                    [
-                        f"Body {i} position (x)",
-                        f"Body {i} position (y)",
-                        f"Body {i} position (z)",
-                        f"Body {i} velocity (x)",
-                        f"Body {i} velocity (y)",
-                        f"Body {i} velocity (z)",
-                        f"Body {i} acceleration (x)",
-                        f"Body {i} acceleration (y)",
-                        f"Body {i} acceleration (z)",
-                    ]
+            header = ["Iteration", "t"] + [
+            f"Body {i} {prop} ({axis})"
+            for i in range(1, len(bodies) + 1)
+            for prop in ("position", "velocity", "acceleration")
+            for axis in ("x", "y", "z")
+            ]
                 )
             writer.writerow(header)
 
