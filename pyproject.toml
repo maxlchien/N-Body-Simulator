@@ -62,4 +62,5 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
+"src/nbody/barnes_hut.py" = ["F821"]
 "src/nbody/preprocess.py" = ["T201", "PTH123"]
