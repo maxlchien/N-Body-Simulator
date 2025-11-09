@@ -7,10 +7,11 @@ import numpy as np
 
 @dataclass
 class Body:
-    """
-    Max's placeholder Body class. Can be replaced if `barnes_hut.py` is updated to account for changes.
-    """
+    """A class in which to store objects that will
+    be time-evolved through our N-body simulator."""
 
+    id: str
     mass: float
+    radius: float
     position: np.ndarray
     velocity: np.ndarray
