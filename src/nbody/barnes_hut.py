@@ -212,17 +212,30 @@ class Tree:
         self.recursive_split(self.root)
         self.root.compute_masses()
 
-    def compute_accel(self, other: Body, theta: float = 1, G: float = 6.6743e-11):
+    def compute_accel(
+        self, other: Body, theta: float = 1, G: float = 6.6743e-11
+    ) -> np.ndarray:
         """
         Compute the acceleration felt by a given Body object from the system using the Barnes-Hut algorithm.
 
         Arguments:
-            other (Body): The Body experiencing acceleration.
+            other (Body): The Body experiencing acceleration. This will usually be a body in the system but computation
+                is supported for bodies outside the system.
             theta (float, optional): An accuracy parameter used by the Barnes-Hut grouping algorithm. Defaults to 1.
             G (float, optional): The gravitational constant. Defaults to 6.6743e-11.
 
         Returns:
             np.ndarray: The acceleration vector.
+
+        Examples:
+            >>> moon = Body("Moon", 1, 1, np.zeros(2), np.zeros(2))
+            >>> earth = Body("Earth", 1e6, 100, np.array([1.0, 0]), np.zeros(2))
+            >>> tree = Tree([moon, earth])
+            >>> tree.compute_accel(moon)
+            [6.676973582469296e-05, 0.0]
+            >>> tree2 = Tree([earth])
+            >>> tree2.compute_accel(moon)
+            [6.676973582469296e-05, 0.0]
         """
         accel = np.zeros(2)
 
