@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 import yaml
-from body import Body
+
+from nbody.body import Body
 
 # the following class is commented out because the module has not been developed yet
 # from generate_bodies import generate_random_bodies
@@ -25,16 +26,17 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
         n_bodies = sim_params.get("n_bodies", 5)
         print(f"No bodies in input file, generating {n_bodies} random ones.")
         # comment this out when module actually gets developed
+        bodies = []
         # bodies = generate_random_bodies(n_bodies)
     else:
         # Bodies provided: construct from YAML
         bodies = [
             Body(
-                name=b.get("id", f"Body{i}"),
+                id=b.get("id", f"Body{i}"),
                 mass=b["mass"],
                 radius=b["radius"],
-                position=b["pos_arr"],
-                velocity=b["v_arr"],
+                position=b["position"],
+                velocity=b["velocity"],
             )
             for i, b in enumerate(bodies_data)
         ]

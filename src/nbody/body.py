@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass
 class Body:
@@ -11,5 +13,5 @@ class Body:
     id: str
     mass: float
     radius: float
-    pos_arr: list[float]
-    v_arr: list[float]
+    position: np.ndarray
+    velocity: np.ndarray
