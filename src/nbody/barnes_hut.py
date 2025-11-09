@@ -5,14 +5,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from body import Body
+
+from nbody.body import Body
 
 
 class Tree:
     """
     The tree of dyadic cubes produced by the Barnes-Hut algorithm.
 
-    An initial dyadic cube [a_1, b_1) x [a_2, b_2) x [a_3, b_3) (all cubes are half-open) is repeatedly subdivided
+    An initial dyadic cube [a_1, b_1) x [a_2, b_2) (all cubes are half-open) is repeatedly subdivided
     until each cube contains exactly one point. Empty nodes are culled. The center of mass and total mass in each
     cube is computed in O(N logN) time from the bottom up.
 
@@ -34,7 +35,7 @@ class Tree:
         A tree node representing a dyadic cube.
 
         Attributes:
-            coord (np.ndarray): The bottom left corner, i.e. (a_1, a_2, a_3) if the cube is [a_1, b_1) x [a_2, b_2) x [a_3, b_3).
+            coord (np.ndarray): The bottom left corner, i.e. (a_1, a_2) if the cube is [a_1, b_1) x [a_2, b_2).
             length (float): The sidelength of the cube.
             points (list[Body]): A list of the bodies contained in the cube.
             parent (Node): The parent dyadic cube.
@@ -47,11 +48,11 @@ class Tree:
         coord: np.ndarray
         length: float
         points: list[Body]
-        parent: Node
+        parent: Tree.Node | None
 
-        center_of_mass: np.ndarray = None
-        mass: float = None
-        children: list = None
+        center_of_mass: np.ndarray | None = None
+        mass: float | None = None
+        children: list | None = None
 
         depth: int = 0
 
@@ -65,7 +66,7 @@ class Tree:
                 return
             for child in self.children:  # traverse down the tree
                 child.compute_masses()
-            com = np.zeros(3)
+            com = np.zeros(2)
             m = 0
             for child in self.children:
                 com += child.mass * child.center_of_mass  # traverse back up
@@ -110,62 +111,32 @@ class Tree:
             return []
         x = node.coord[0]
         y = node.coord[1]
-        z = node.coord[2]
         xmid = node.coord[0] + node.length / 2
         ymid = node.coord[1] + node.length / 2
-        zmid = node.coord[2] + node.length / 2
 
-        nodelll = Tree.Node(
-            coord=np.array([x, y, z]),
+        nodell = Tree.Node(
+            coord=np.array([x, y]),
             length=node.length / 2,
             points=[],
             parent=node,
             depth=node.depth + 1,
         )
-        nodellr = Tree.Node(
-            coord=np.array([x, y, zmid]),
+        nodelr = Tree.Node(
+            coord=np.array([x, ymid]),
             length=node.length / 2,
             points=[],
             parent=node,
             depth=node.depth + 1,
         )
-        nodelrl = Tree.Node(
-            coord=np.array([x, ymid, z]),
+        noderl = Tree.Node(
+            coord=np.array([xmid, y]),
             length=node.length / 2,
             points=[],
             parent=node,
             depth=node.depth + 1,
         )
-        nodelrr = Tree.Node(
-            coord=np.array([x, ymid, zmid]),
-            length=node.length / 2,
-            points=[],
-            parent=node,
-            depth=node.depth + 1,
-        )
-        noderll = Tree.Node(
-            coord=np.array([xmid, y, z]),
-            length=node.length / 2,
-            points=[],
-            parent=node,
-            depth=node.depth + 1,
-        )
-        noderlr = Tree.Node(
-            coord=np.array([xmid, y, zmid]),
-            length=node.length / 2,
-            points=[],
-            parent=node,
-            depth=node.depth + 1,
-        )
-        noderrl = Tree.Node(
-            coord=np.array([xmid, ymid, z]),
-            length=node.length / 2,
-            points=[],
-            parent=node,
-            depth=node.depth + 1,
-        )
-        noderrr = Tree.Node(
-            coord=np.array([xmid, ymid, zmid]),
+        noderr = Tree.Node(
+            coord=np.array([xmid, ymid]),
             length=node.length / 2,
             points=[],
             parent=node,
@@ -175,26 +146,16 @@ class Tree:
         for point in node.points:  # use the convention of half open intervals [a,b)
             p = point.position
             if p[0] < xmid:
-                if p[1] < ymid:
-                    n = nodelll if p[2] < zmid else nodellr
-                else:
-                    n = nodelrl if p[2] < zmid else nodelrr
+                n = nodell if p[1] < ymid else nodelr
             else:
-                if p[1] < ymid:
-                    n = noderll if p[2] < zmid else noderlr
-                else:
-                    n = noderrl if p[2] < zmid else noderrr
+                n = noderl if p[1] < ymid else noderr
             n.points.append(point)
 
         node.children = [
-            nodelll,
-            nodellr,
-            nodelrl,
-            nodelrr,
-            noderll,
-            noderlr,
-            noderrl,
-            noderrr,
+            nodell,
+            nodelr,
+            noderl,
+            noderr,
         ]  # flatten list
         node.children = [
             n for n in node.children if len(n.points) > 0
@@ -233,20 +194,17 @@ class Tree:
 
         xvals = [p.position[0] for p in points]
         yvals = [p.position[1] for p in points]
-        zvals = [p.position[2] for p in points]
 
         xmin = min(xvals)
         xmax = max(xvals)
         ymin = min(yvals)
         ymax = max(yvals)
-        zmin = min(zvals)
-        zmax = max(zvals)
 
         base_length = 2 * max(
-            xmax - xmin, ymax - ymin, zmax - zmin
+            xmax - xmin, ymax - ymin
         )  # double length to avoid issues with the half interval convention
         self.root = self.Node(
-            coord=np.array([xmin, ymin, zmin]),
+            coord=np.array([xmin, ymin]),
             length=base_length,
             points=points,
             parent=None,
@@ -266,7 +224,7 @@ class Tree:
         Returns:
             np.ndarray: The acceleration vector.
         """
-        accel = np.zeros(3)
+        accel = np.zeros(2)
 
         stack = [self.root]
 
@@ -328,11 +286,11 @@ class BarnesHutPropagator:
         with path.open("w", newline="") as f:
             writer = csv.writer(f)
             # The header line
-            header = ["Iteration", "t"] + [
+            header = ["Iteration", "Time"] + [
                 f"Body {i} {prop} ({axis})"
                 for i in range(1, len(bodies) + 1)
                 for prop in ("position", "velocity", "acceleration")
-                for axis in ("x", "y", "z")
+                for axis in ("x", "y")
             ]
             writer.writerow(header)
 
@@ -341,7 +299,7 @@ class BarnesHutPropagator:
                 tree = Tree(bodies)
 
                 trace = [i, dt * i]
-                accels = np.zeros([len(bodies), 3])
+                accels = np.zeros([len(bodies), 2])
                 for j, body in enumerate(bodies):
                     # record previous position/velocity
                     trace.extend(body.position)
@@ -358,7 +316,7 @@ class BarnesHutPropagator:
 # sample code to demonstrate utility
 if __name__ == "__main__":
     bodies = [
-        Body(1, np.zeros(3), np.zeros(3)),
-        Body(1000, np.array([1.0, 0, 0]), np.zeros(3)),
+        Body("Moon", 1, 1, np.zeros(2), np.zeros(2)),
+        Body("Earth", 1e6, 100, np.array([1.0, 0]), np.zeros(2)),
     ]
     BarnesHutPropagator(bodies, {})
