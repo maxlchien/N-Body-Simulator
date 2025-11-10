@@ -21,15 +21,26 @@ class EulerPropagator:
 
     def __init__(self, bodies, params, output_name="nbody_results"):
         """
-        Initialize the propagator with body objects and simulation parameters.
+        Initialize the EulerPropagator with bodies and simulation parameters.
 
-        Args:
-            bodies (list): A list of Body objects with initial states.
-            params (dict): Dictionary containing keys 'G', 'dt', and 't_total'.
-            output_name (str, optional): Base name for the output CSV file. Defaults to 'nbody_results'.
+        Parameters
+        ----------
+        bodies : list of Body
+            List of Body objects containing initial positions, velocities, mass, and name.
+        params : dict
+            Simulation parameters. Expected keys:
+                'G' : float
+                    Gravitational constant. Default is 6.6743e-11.
+                'dt' : float
+                    Time step for numerical integration. Default is 1.0
+                't_total' : float
+                    Total simulation time. Default is 1000.0
+        output_name : str, optional
+            Base name for the output CSV file. Timestamp will be appended.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         self.bodies = bodies
         self.G = params.get("G", 6.6743e-11)
@@ -46,13 +57,26 @@ class EulerPropagator:
 
     def compute_accelerations(self, positions):
         """
-        Compute accelerations on all bodies due to mutual gravitational attraction.
+        Compute gravitational accelerations on all bodies at the current positions due to mutual attraction.
 
-        Args:
-            positions (np.ndarray): Nx2 array of x and y positions for N bodies.
+        Parameters
+        ----------
+        positions : np.ndarray, shape (N, 2)
+            Positions of all N bodies in 2D space (x, y).
 
-        Returns:
-            np.ndarray: Nx2 array of accelerations for each body in x and y directions.
+        Returns
+        -------
+        acc : np.ndarray, shape (N, 2)
+            Accelerations (ax, ay) for each body.
+
+        Raises
+        ------
+        ValueError
+            If `positions` is not shape (N, 2).
+
+        Notes
+        -----
+        Uses Newtonian point-mass gravity.
         """
         acc = np.zeros_like(positions)
         for i in range(self.n_bodies):
@@ -66,10 +90,17 @@ class EulerPropagator:
 
     def propagate(self):
         """
-        Propagate the system forward in time using the Euler (forward difference) method.
+        Propagate the system forward in time using forward-Euler integration.
 
-        Returns:
-            np.ndarray: 3D array of shape (num_steps, n_bodies, 4) containing x, y, vx, vy.
+        Returns
+        -------
+        states : np.ndarray, shape (num_steps, n_bodies, 6)
+            Simulated state history. For each time step and each body:
+            [x, y, vx, vy, ax, ay].
+
+        Notes
+        -----
+        This modifies internal state arrays in-place.
         """
         positions = np.array([b.position for b in self.bodies])
         velocities = np.array([b.velocity for b in self.bodies])
@@ -86,6 +117,25 @@ class EulerPropagator:
         return self.states
 
     def write_results(self):
+        """
+        Write the state history to a timestamped CSV file.
+
+        Returns
+        -------
+        filename : str
+            Name of the written CSV file.
+
+        Notes
+        -----
+        CSV format:
+            row 0 : simulation parameters (G, dt, t_total)
+            row 1 : column headers
+            subsequent rows : step,time,body,x,y,vx,vy,ax,ay
+
+        Examples
+        --------
+        >>> fname = propagator.write_results()
+        """
         dt = self.dt
         num_steps = self.num_steps
 
@@ -120,15 +170,25 @@ class EulerPropagator:
 
 def run_simulation(bodies, params, output_name="nbody_results"):
     """
-    Run an N-body simulation using Euler propagation and write results to CSV.
+    Run an N-body Euler simulation and write results to CSV.
 
-    Args:
-        bodies (list): A list of Body objects.
-        params (dict): Dictionary of parameters including G, dt, and t_total.
-        output_name (str, optional): Base name for CSV output.
+    Parameters
+    ----------
+    bodies : list of Body
+        List of Body objects with initial state.
+    params : dict
+        Dictionary with simulation parameters (G, dt, t_total).
+    output_name : str, optional
+        Base filename for output CSV.
 
-    Returns:
-        np.ndarray: 3D array of shape (num_steps, n_bodies, 4) containing x, y, vx, vy.
+    Returns
+    -------
+    states : np.ndarray, shape (num_steps, n_bodies, 6)
+        Final propagated state history.
+
+    Examples
+    --------
+    > states = run_simulation([Body(...), Body(...)], {'dt':0.01,'t_total':10})
     """
     propagator = EulerPropagator(bodies, params, output_name=output_name)
     states = propagator.propagate()
