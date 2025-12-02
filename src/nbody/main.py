@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import time
+
 import numpy as np
 from body import Body
 from EulerPropagator import EulerPropagator
+
+USE_NUMBA = (
+    False  # not helpful until the number of bodies is large due to compilation overhead
+)
 
 
 def main():
@@ -33,8 +39,19 @@ def main():
 
     # Create propagator and run
     propagator = EulerPropagator(bodies, params)
+
+    if USE_NUMBA:
+        propagator.propagate()  # get compilation out of the way, this will get overwritten with the same data
+
+    # time the calculation portion
+    start_time = time.perf_counter_ns()
     propagator.propagate()
-    filename = propagator.write_results()
+    end_time = time.perf_counter_ns()
+    total_ns = end_time - start_time
+
+    filename = propagator.write_results(
+        header_options=[f"USE_NUMBA={USE_NUMBA}", f"Nanoseconds taken={total_ns}"]
+    )
     print(f"Simulation complete. Results written to {filename}")
 
 

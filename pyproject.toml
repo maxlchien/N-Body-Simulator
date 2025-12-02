@@ -10,7 +10,7 @@ authors = [
     { name = "teodorgrosu" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["numpy", "numba", "scipy"]
 
 [project.scripts]
 nbody = "nbody:main"
@@ -22,7 +22,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 test = ["pytest"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-markdown-builder"]
-dev = []
+dev = ["matplotlib", "scikit-learn"]
 nox = [
     "nox>=2025.5.1",
     "nox-uv>=0.6.2",
