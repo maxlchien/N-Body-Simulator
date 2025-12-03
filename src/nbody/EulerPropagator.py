@@ -282,13 +282,13 @@ class EulerPropagator:
             writer.writerow(headers)  # Second row: headers
 
             for step in range(num_steps):
+                row = [
+                    step,
+                    step * dt,
+                ]
                 for b in range(self.n_bodies):
-                    row = [
-                        step,
-                        step * dt,
-                    ]
                     row.extend(self.states[step, b, :])
-                    writer.writerow(row)
+                writer.writerow(row)
 
         print(f"Results written to {filename}")
         return filename

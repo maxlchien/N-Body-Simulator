@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import csv
+import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -274,11 +276,22 @@ class BarnesHutPropagator:
     Simulate an orbital system using the Barnes-Hut N logN algorithm for force computation.
     """
 
+    bodies: list[Body]
+    theta: float
+    G: float
+    dt: float
+    t_total: float
+    num_steps: int
+    output_name: str
+    n_bodies: int
+    state_vector_size: int
+    states: np.ndarray
+
     def __init__(
         self,
         bodies: list[Body],
         params: dict | None,
-        output_file: str = "OUTPUT_FILES/traces.csv",
+        output_name: str = "OUTPUT_FILES/traces.csv",
     ):
         """
         Arguments:
@@ -289,47 +302,81 @@ class BarnesHutPropagator:
         """
         if params is None:
             params = {}
-        dt = params.get("dt", 1.0)
-        t_max = params.get("t_max", 100)
-        theta = params.get("theta", 1)
-        G = params.get("G", 6.6743e-11)
+        self.bodies = bodies
+        self.G = params.get("G", 6.6743e-11)
+        self.dt = params.get("dt", 1.0)
+        self.theta = params.get("theta", 1)
+        self.t_total = params.get("t_total", 1000.0)
+        self.num_steps = int(self.t_total / self.dt)
+        self.output_name = output_name
 
-        path = Path(output_file)
+        self.n_bodies = len(bodies)
+        self.state_vector_size = 6  # x, y, vx, vy, ax, ay
+
+        # 3D array to store states: time x body x state_vector
+        self.states = np.zeros((self.num_steps, self.n_bodies, self.state_vector_size))
+
+    def propagate(self, timeout_ns: int | None = None):
+        """
+        Propagate the system forward in time using the Barnes-Hut algorithm.
+
+        Returns
+        -------
+        states : np.ndarray, shape (num_steps, n_bodies, 6)
+            Simulated state history. For each time step and each body:
+            [x, y, vx, vy, ax, ay].
+
+        Notes
+        -----
+        This modifies internal state arrays in-place.
+        """
+        start_time = time.perf_counter_ns()
+        for step in range(self.num_steps):
+            # generate the dyadic tree
+            tree = Tree(bodies)
+            accels = np.zeros([len(bodies), 2])
+            for j, body in enumerate(bodies):
+                accels[j] = tree.compute_accel(body, self.theta, self.G)
+                if (
+                    timeout_ns is not None
+                    and time.perf_counter_ns() - start_time > timeout_ns
+                ):
+                    msg = f"Timedout after {timeout_ns} ns"
+                    raise TimeoutError(msg)
+            for j, body in enumerate(bodies):
+                # need a second loop because the tree reference current positions/velocities
+                self.states[step, j, 0:2] = body.position
+                self.states[step, j, 2:4] = body.velocity
+                self.states[step, j, 4:6] = accels[j]
+                # update position/velocity
+                body.position += self.dt * body.velocity
+                body.velocity += self.dt * accels[j]
+        return self.states
+
+    def write_results(self):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{self.output_name}_{timestamp}.csv"
+        path = Path(filename)
         path.parent.mkdir(exist_ok=True, parents=True)
         with path.open("w", newline="") as f:
             writer = csv.writer(f)
             # The header line
+            param_row = [f"G={self.G}", f"dt={self.dt}", f"t_total={self.t_total}"]
             header = ["Iteration", "Time"] + [
                 f"Body {i} {prop} ({axis})"
                 for i in range(1, len(bodies) + 1)
                 for prop in ("position", "velocity", "acceleration")
                 for axis in ("x", "y")
             ]
+            writer.writerow(param_row)
             writer.writerow(header)
 
-            for i in range(t_max):
-                # generate the dyadic tree
-                tree = Tree(bodies)
-
-                trace = [i, dt * i]
-                accels = np.zeros([len(bodies), 2])
-                for j, body in enumerate(bodies):
-                    # record previous position/velocity
-                    trace.extend(body.position)
-                    trace.extend(body.velocity)
-                    accels[j] = tree.compute_accel(body, theta, G)
-                    trace.extend(accels[j])
-                for j, body in enumerate(bodies):
-                    # update position/velocity
-                    body.position += dt * body.velocity
-                    body.velocity += dt * accels[j]
-                writer.writerow(trace)
-
-
-# sample code to demonstrate utility
-if __name__ == "__main__":
-    bodies = [
-        Body("Moon", 1, 1, np.zeros(2), np.zeros(2)),
-        Body("Earth", 1e6, 100, np.array([1.0, 0]), np.zeros(2)),
-    ]
-    BarnesHutPropagator(bodies, {})
+            for step in range(self.num_steps):
+                row = [
+                    step,
+                    step * self.dt,
+                ]
+                for b in range(self.n_bodies):
+                    row.extend(self.states[step, b, :])
+                writer.writerow(row)
+        return filename
