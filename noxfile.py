@@ -39,4 +39,4 @@ def benchmark(session: nox.Session) -> None:
     Run runtime benchmarks.
     """
 
-    session.run("python", "numba_comparison.py", *session.posargs)
+    session.run("python", "runtime_benchmark.py", *session.posargs)
