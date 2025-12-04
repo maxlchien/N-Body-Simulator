@@ -60,8 +60,8 @@ def test_barnes_hut(bodies: list[Body] | list[Body_nb], theta: float):
     return end_time - start_time
 
 
-test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000]
-# test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+# test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000]
+test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 numba_times = []
 euler_times = []
 barnes1_times = []
@@ -289,4 +289,4 @@ axes[1].text(
 axes[1].axis("off")
 plt.suptitle("Propagation Step Runtime Scaling Comparison")
 plt.tight_layout()
-plt.savefig("numba_comparison.png")
+plt.savefig("runtime_benchmark.png")

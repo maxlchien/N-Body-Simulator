@@ -1,0 +1,27 @@
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  Benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install and benchmark package (using nox group)
+        run: |
+          uv sync --group nox
+          uv run nox -s benchmark
+      - name: Commit image
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Add runtime benchmark graph"
+          add: "runtime_benchmark.png"
