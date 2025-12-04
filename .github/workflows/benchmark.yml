@@ -22,6 +22,8 @@ jobs:
         run: |
           uv sync --group nox
           uv run nox -s benchmark
+        env:
+          PYTHONUNBUFFERED: 1
       - name: Commit image
         uses: EndBug/add-and-commit@v9
         with:
