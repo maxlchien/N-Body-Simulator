@@ -110,7 +110,7 @@ class EulerPropagator:
         self,
         bodies: list[Body] | list[Body_nb],
         params: dict,
-        output_dir: str = ".",
+        output_dir: str = "results",
         output_name: str = "nbody_results",
         use_numba=False,
     ):
