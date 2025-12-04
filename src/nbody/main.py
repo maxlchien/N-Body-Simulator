@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import time
+from pathlib import Path
 
-import numpy as np
-from body import Body
-from EulerPropagator import EulerPropagator
+from nbody.engine.barnes_hut import BarnesHutPropagator
+from nbody.engine.euler_propagator import EulerPropagator
+from nbody.utility.preprocess import read_simulation_config
 
 USE_NUMBA = (
     False  # not helpful until the number of bodies is large due to compilation overhead
@@ -12,47 +12,39 @@ USE_NUMBA = (
 
 
 def main():
-    # Dummy bodies for replacement/showing use case
-    bodies = [
-        Body(
-            id="Earth",
-            position=np.array([0.0, 0.0]),
-            velocity=np.array([0.0, 0.0]),
-            mass=5.97e24,
-            radius=1,
-        ),
-        Body(
-            id="Moon",
-            position=np.array([384_400_000.0, 0.0]),
-            velocity=np.array([0.0, 1022.0]),
-            mass=7.35e22,
-            radius=1,
-        ),
-    ]
+    # Path to simulation YAML
+    config_path = Path(__file__).parent / "config" / "simulation.yaml"
 
-    # Simulation parameters sample
-    params = {
-        "G": 6.6743e-11,  # real gravitational constant
-        "dt": 60.0,  # 1 minute timestep
-        "t_total": 3600.0,  # 1 hour total for testing
-    }
+    # Load bodies and simulation parameters from YAML
+    bodies, sim_params = read_simulation_config(config_path)
 
-    # Create propagator and run
-    propagator = EulerPropagator(bodies, params)
+    # Simulation settings
+    timestep = sim_params.get("timestep")
+    duration = sim_params.get("duration")
+    engine_type = sim_params.get("engine", "euler")
+    output_dir_cfg = sim_params.get("output_dir", "results")
+    output_dir = Path(__file__).parent / output_dir_cfg
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    if USE_NUMBA:
-        propagator.propagate()  # get compilation out of the way, this will get overwritten with the same data
+    # Check required fields
+    if timestep is None or duration is None:
+        msg = "Missing 'timestep' or 'duration' in simulation parameters"
+        raise ValueError(msg)
 
-    # time the calculation portion
-    start_time = time.perf_counter_ns()
+    # Select propagator
+    if engine_type == "euler":
+        propagator = EulerPropagator(bodies, sim_params, output_dir)
+    elif engine_type == "barnes_hut":
+        propagator = BarnesHutPropagator(bodies, sim_params)
+    else:
+        msg = f"Unknown engine: {engine_type}"
+        raise ValueError(msg)
+
+    # Run simulation
     propagator.propagate()
-    end_time = time.perf_counter_ns()
-    total_ns = end_time - start_time
+    propagator.write_results()
 
-    filename = propagator.write_results(
-        header_options=[f"USE_NUMBA={USE_NUMBA}", f"Nanoseconds taken={total_ns}"]
-    )
-    print(f"Simulation complete. Results written to {filename}")
+    print(f"Simulation complete. Results saved in {output_dir}")
 
 
 if __name__ == "__main__":

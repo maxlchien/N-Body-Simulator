@@ -685,6 +685,7 @@ dependencies = [
     { name = "numba" },
     { name = "numpy" },
     { name = "scipy" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -709,8 +710,9 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "numba" },
-    { name = "numpy" },
     { name = "scipy" },
+    { name = "numpy", specifier = ">=1.27" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [package.metadata.requires-dev]

@@ -7,7 +7,7 @@ from datetime import datetime
 import numba
 import numpy as np
 
-from nbody.body import Body, Body_nb, convert_to_body_nb
+from nbody.model.body import Body, Body_nb, convert_to_body_nb
 
 # put numba methods outside class
 
@@ -110,6 +110,7 @@ class EulerPropagator:
         self,
         bodies: list[Body] | list[Body_nb],
         params: dict,
+        output_dir: str = ".",
         output_name: str = "nbody_results",
         use_numba=False,
     ):
@@ -143,6 +144,7 @@ class EulerPropagator:
         self.dt = params.get("dt", 1.0)
         self.t_total = params.get("t_total", 1000.0)
         self.num_steps = int(self.t_total / self.dt)
+        self.output_dir = output_dir
         self.output_name = output_name
 
         self.n_bodies = len(bodies)
@@ -274,7 +276,8 @@ class EulerPropagator:
         ]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.output_name}_{timestamp}.csv"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        filename = self.output_dir / f"{self.output_name}_{timestamp}.csv"
 
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from nbody.body import Body
+from nbody.model.body import Body
 
 
 class Tree:

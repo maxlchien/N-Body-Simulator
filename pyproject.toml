@@ -10,14 +10,22 @@ authors = [
     { name = "teodorgrosu" }
 ]
 requires-python = ">=3.12"
-dependencies = ["numpy", "numba", "scipy"]
+dependencies = [
+    "PyYAML>=6.0",
+    "numpy>=1.27",
+    "numba",
+    "scipy"
+]
 
 [project.scripts]
-nbody = "nbody:main"
+nbody = "nbody.main:main"
 
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+source-directory = "src"
 
 [dependency-groups]
 test = ["pytest"]
@@ -27,6 +35,7 @@ nox = [
     "nox>=2025.5.1",
     "nox-uv>=0.6.2",
 ]
+
 
 [tool.ruff.lint]
 extend-select = [
@@ -62,10 +71,10 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
-"src/nbody/barnes_hut.py" = ["F821"]
-"src/nbody/preprocess.py" = ["T201", "PTH123"]
-"src/nbody/EulerPropagator.py" = ["T201", "PTH123", "RUF003"]
+"src/nbody/engine/barnes_hut.py" = ["F821"]
+"src/nbody/utility/preprocess.py" = ["T201", "PTH123"]
+"src/nbody/engine/euler_propagator.py" = ["T201", "PTH123", "RUF003"]
 "src/nbody/main.py" = ["T201"]
-"src/nbody/body.py" = ["EM101"]
+"src/nbody/model/body.py" = ["EM101"]
 "runtime_benchmark.py" = ["T201"]
 "noxfile.py" = ["T201"]

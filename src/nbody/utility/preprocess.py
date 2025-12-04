@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 import yaml
-from body import Body
-from generate_bodies import generate_random_bodies
+import numpy as np
+from pathlib import Path
+from nbody.model.body import Body
+from nbody.utility.generate_bodies import generate_random_bodies
 
 # The following import is commented out because the module has not been developed yet.
 # from generate_bodies import generate_random_bodies
@@ -61,7 +63,7 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
         data = yaml.safe_load(f) or {}
 
     sim_params = data.get("simulation", {})
-    bodies_data = data.get("bodies", None)
+    bodies_data = data.get("bodies", {}).get("list", None)
 
     if not bodies_data:
         n_bodies = sim_params.get("n_bodies", 5)
@@ -71,19 +73,21 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
         bodies = [
             Body(
                 id=b.get("id", f"Body{i}"),
-                mass=b["mass"],
-                radius=b["radius"],
-                position=b["position"],
-                velocity=b["velocity"],
+                mass=float(b["mass"]),
+                radius=float(b["radius"]),
+                position=np.array(b["position"], dtype=float),
+                velocity=np.array(b["velocity"], dtype=float),
             )
             for i, b in enumerate(bodies_data)
         ]
+
 
     return bodies, sim_params
 
 
 if __name__ == "__main__":
-    bodies, sim_params = read_simulation_config("simulation.yaml")
+    config_file = Path(__file__).resolve().parent.parent / "config" / "simulation.yaml"
+    bodies, sim_params = read_simulation_config(config_file)
     print("Simulation parameters:")
     print(sim_params)
     print("\nBodies:")
