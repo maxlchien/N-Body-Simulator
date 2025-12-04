@@ -95,7 +95,7 @@ def _propagate_numba(
 
 
 class EulerPropagator:
-    bodies: list[Body] | list[Body_nb]
+    bodies: list[Body]
     G: float
     dt: float
     t_total: float
@@ -108,7 +108,7 @@ class EulerPropagator:
 
     def __init__(
         self,
-        bodies: list[Body],
+        bodies: list[Body] | list[Body_nb],
         params: dict,
         output_name: str = "nbody_results",
         use_numba=False,

@@ -7,12 +7,15 @@ import numpy as np
 from scipy.optimize import curve_fit
 from sklearn.linear_model import LinearRegression
 
+from nbody.barnes_hut import BarnesHutPropagator
 from nbody.body import Body, Body_nb, convert_to_body_nb
 from nbody.EulerPropagator import EulerPropagator
 from nbody.generate_bodies import generate_random_bodies
 
+TIMEOUT = 2e11
 
-def test(bodies: list[Body] | list[Body_nb], USE_NUMBA: bool):
+
+def test_euler(bodies: list[Body] | list[Body_nb], USE_NUMBA: bool):
     # Simulation parameters sample
     params = {
         "G": 6.6743e-11,  # real gravitational constant
@@ -29,98 +32,261 @@ def test(bodies: list[Body] | list[Body_nb], USE_NUMBA: bool):
     # time the calculation portion
     start_time = time.perf_counter_ns()
     try:
-        propagator.propagate(timeout_ns=1e11)
+        propagator.propagate(timeout_ns=TIMEOUT)
     except TimeoutError:
         return np.nan
     end_time = time.perf_counter_ns()
     return end_time - start_time
 
 
-test_numbers = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+def test_barnes_hut(bodies: list[Body] | list[Body_nb], theta: float):
+    # Simulation parameters sample
+    params = {
+        "G": 6.6743e-11,  # real gravitational constant
+        "dt": 60.0,  # 1 minute timestep
+        "theta": theta,
+        "t_total": 3600.0,  # 1 hour total for testing
+    }
+
+    # Create propagator and run
+    propagator = BarnesHutPropagator(bodies, params)
+    # time the calculation portion
+    start_time = time.perf_counter_ns()
+    try:
+        propagator.propagate(timeout_ns=TIMEOUT)
+    except TimeoutError:
+        return np.nan
+    end_time = time.perf_counter_ns()
+    return end_time - start_time
+
+
+test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000]
+# test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 numba_times = []
-normal_times = []
+euler_times = []
+barnes1_times = []
+barnes5_times = []
+barnes2_times = []
 
 all_bodies = generate_random_bodies(max(test_numbers))
 numba_bodies = [convert_to_body_nb(body) for body in all_bodies]
-NORMAL_TIMED_OUT = False
+euler_TIMED_OUT = False
+barnes1_TIMED_OUT = False
+barnes5_TIMED_OUT = False
+barnes2_TIMED_OUT = False
 for n_bodies in test_numbers:
     bodies = all_bodies[:n_bodies]
     nb_bodies = numba_bodies[:n_bodies]
-    numba_time = test(nb_bodies, True)
+
+    numba_time = test_euler(nb_bodies, True)
     numba_times.append(numba_time)
-    if NORMAL_TIMED_OUT:
-        normal_times.append(np.nan)
+
+    if euler_TIMED_OUT:
+        euler_times.append(np.nan)
     else:
-        normal_time = test(bodies, False)
-        normal_times.append(normal_time)
-        if not np.isfinite(normal_time):
-            NORMAL_TIMED_OUT = True
+        euler_time = test_euler(bodies, False)
+        euler_times.append(euler_time)
+        if not np.isfinite(euler_time):
+            euler_TIMED_OUT = True
+
+    if barnes1_TIMED_OUT:
+        barnes1_times.append(np.nan)
+    else:
+        barnes1_time = test_barnes_hut(bodies, theta=1)
+        barnes1_times.append(barnes1_time)
+        if not np.isfinite(barnes1_time):
+            barnes1_TIMED_OUT = True
+    if barnes5_TIMED_OUT:
+        barnes5_times.append(np.nan)
+    else:
+        barnes5_time = test_barnes_hut(bodies, theta=0.5)
+        barnes5_times.append(barnes5_time)
+        if not np.isfinite(barnes5_time):
+            barnes5_TIMED_OUT = True
+    if barnes2_TIMED_OUT:
+        barnes2_times.append(np.nan)
+    else:
+        barnes2_time = test_barnes_hut(bodies, theta=0.2)
+        barnes2_times.append(barnes2_time)
+        if not np.isfinite(barnes2_time):
+            barnes2_TIMED_OUT = True
     print(
-        f"Simulated {n_bodies} bodies in {numba_time} ns with numba, {normal_time} ns without numba"
+        f"Simulated {n_bodies} bodies in {numba_time} ns with numba, {euler_time} ns without numba, {barnes1_time} ns with Barnes-Hut (theta)=1, {barnes5_time} ns with Barnes-Hut (theta=0.5), {barnes2_time} ns with Barnes-Hut (theta=0.2)"
     )
 
 test_numbers = np.array(test_numbers)
-numba_times = np.array(numba_times)
-normal_times = np.array(normal_times)
+# convert to ms
+numba_times = np.array(numba_times) / 1e6
+euler_times = np.array(euler_times) / 1e6
+barnes1_times = np.array(barnes1_times) / 1e6
+barnes5_times = np.array(barnes5_times) / 1e6
+barnes2_times = np.array(barnes2_times) / 1e6
+
+euler_nanmask = np.isfinite(euler_times)
+barnes1_nanmask = np.isfinite(barnes1_times)
+barnes5_nanmask = np.isfinite(barnes5_times)
+barnes2_nanmask = np.isfinite(barnes2_times)
 
 # get scaling laws
-normal_model = LinearRegression()
-nanmask = np.isfinite(normal_times)
-normal_model.fit(
-    np.log(test_numbers[nanmask]).reshape(-1, 1), np.log(normal_times[nanmask])
-)
-normal_pow = normal_model.coef_[0]  # time = bodies^p
-normal_coeff = normal_model.intercept_  # the constant coefficient
 
 
-def power_law_with_constant(x, a, p, b):
+# euler propagator should be power law plus overhead cost
+def euler_numba_law(x, a, p, b):
     return a * (x**p) + b
 
 
+lower_bounds = (0, 0, 0)  # negative coefficients are nonphysical
+upper_bounds = (np.inf, np.inf, np.inf)
+
 popt, _ = curve_fit(
-    power_law_with_constant, test_numbers, numba_times, p0=[1e8, 1.5, 4e8]
+    euler_numba_law,
+    test_numbers,
+    numba_times,
+    p0=[1e-1, 2, 4e2],
+    maxfev=2000,
+    bounds=(lower_bounds, upper_bounds),
+)
+numba_coeff, numba_pow, numba_overhead = popt
+
+# no numba law
+
+euler_regression = LinearRegression()
+euler_regression.fit(
+    np.log(test_numbers[euler_nanmask]).reshape(-1, 1),
+    np.log(euler_times[euler_nanmask]),
 )
 
-# numba_model = LinearRegression()
-# numba_model.fit(np.log(test_numbers).reshape(-1, 1), np.log(numba_times))
-# numba_pow = numba_model.coef_[0] # time = bodies^p
-# numba_coeff = numba_model.intercept_ # the constant coefficient
-numba_coeff, numba_pow, numba_intercept = popt
+euler_coeff, euler_pow = euler_regression.intercept_, *euler_regression.coef_
 
+# barnes-hut law
 
-plt.scatter(test_numbers, numba_times, label="With Numba")
-plt.scatter(test_numbers, normal_times, label="Without Numba")
+barnes1_regression = LinearRegression()
+barnes1_regression.fit(
+    np.log(test_numbers[barnes1_nanmask]).reshape(-1, 1),
+    np.log(barnes1_times[barnes1_nanmask]),
+)
+
+barnes1_coeff, barnes1_pow = barnes1_regression.intercept_, *barnes1_regression.coef_
+
+barnes5_regression = LinearRegression()
+barnes5_regression.fit(
+    np.log(test_numbers[barnes5_nanmask]).reshape(-1, 1),
+    np.log(barnes5_times[barnes5_nanmask]),
+)
+
+barnes5_coeff, barnes5_pow = barnes5_regression.intercept_, *barnes5_regression.coef_
+
+barnes2_regression = LinearRegression()
+barnes2_regression.fit(
+    np.log(test_numbers[barnes2_nanmask]).reshape(-1, 1),
+    np.log(barnes2_times[barnes2_nanmask]),
+)
+
+barnes2_coeff, barnes2_pow = barnes2_regression.intercept_, *barnes2_regression.coef_
+
+#######
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+axes[0].scatter(test_numbers, numba_times, label="Euler w/ Numba")
+axes[0].scatter(test_numbers, euler_times, label="Euler w/o Numba")
+axes[0].scatter(test_numbers, barnes1_times, label="Barnes-Hut (theta=1)")
+axes[0].scatter(test_numbers, barnes5_times, label="Barnes-Hut (theta=0.5)")
+axes[0].scatter(test_numbers, barnes2_times, label="Barnes-Hut (theta=0.2)")
 
 dense = np.logspace(
     np.log(min(test_numbers)), np.log(max(test_numbers)), 1000, base=np.e
 )
-numba_interp = numba_intercept + numba_coeff * dense**numba_pow
-dense_notimeout = np.logspace(
-    np.log(min(test_numbers[nanmask])),
-    np.log(max(test_numbers[nanmask])),
+numba_interp = euler_numba_law(dense, numba_coeff, numba_pow, numba_overhead)
+# numba_interp = numba_overhead + numba_coeff * dense**numba_pow
+
+euler_dense = np.logspace(
+    np.log(min(test_numbers[euler_nanmask])),
+    np.log(max(test_numbers[euler_nanmask])),
     1000,
     base=np.e,
 )
-normal_interp = np.exp(np.log(dense_notimeout) * normal_pow + normal_coeff)
-plt.plot(
+euler_interp = np.exp(euler_regression.predict(np.log(euler_dense).reshape(-1, 1)))
+# euler_interp = euler_overhead + euler_coeff * euler_dense ** euler_pow
+
+barnes1_dense = np.logspace(
+    np.log(min(test_numbers[barnes1_nanmask])),
+    np.log(max(test_numbers[barnes1_nanmask])),
+    1000,
+    base=np.e,
+)
+barnes1_interp = np.exp(
+    barnes1_regression.predict(np.log(barnes1_dense).reshape(-1, 1))
+)
+# barnes_interp = polylogarithmic_with_poly(barnes_dense, bh_a, bh_b, bh_overhead)
+
+barnes5_dense = np.logspace(
+    np.log(min(test_numbers[barnes5_nanmask])),
+    np.log(max(test_numbers[barnes5_nanmask])),
+    1000,
+    base=np.e,
+)
+barnes5_interp = np.exp(
+    barnes5_regression.predict(np.log(barnes5_dense).reshape(-1, 1))
+)
+
+barnes2_dense = np.logspace(
+    np.log(min(test_numbers[barnes2_nanmask])),
+    np.log(max(test_numbers[barnes2_nanmask])),
+    1000,
+    base=np.e,
+)
+barnes2_interp = np.exp(
+    barnes2_regression.predict(np.log(barnes2_dense).reshape(-1, 1))
+)
+
+
+axes[0].plot(
     dense,
     numba_interp,
-    label=f"Numba power law: {numba_intercept}+{numba_coeff:.2f}*bodies^{numba_pow:.2f}",
+    label="Euler law with Numba",
 )
-plt.plot(
-    dense_notimeout,
-    normal_interp,
-    label=f"Normal power law: {np.exp(normal_coeff):.2f}*bodies^{normal_pow:.2f}",
+axes[0].plot(
+    euler_dense,
+    euler_interp,
+    label="Euler law without Numba",
 )
-plt.xscale("log")
-plt.yscale("log")
-plt.gca().set_xlim(left=1)
-plt.gca().set_ylim(bottom=1)
-plt.xlabel(
-    "Number of Elements (log scale)\nRuntimes over 100 seconds are not displayed"
+axes[0].plot(
+    barnes1_dense,
+    barnes1_interp,
+    label="Barnes-Hut law (theta=1)",
 )
-plt.ylabel("Runtime in ns (log scale)")
-plt.legend()
-plt.title("Propagation Step Runtime Scaling Comparison")
+axes[0].plot(
+    barnes5_dense,
+    barnes5_interp,
+    label="Barnes-Hut law (theta=0.5)",
+)
+axes[0].plot(
+    barnes2_dense,
+    barnes2_interp,
+    label="Barnes-Hut law (theta=0.2)",
+)
+axes[0].set_xscale("log")
+axes[0].set_yscale("log")
+axes[0].set_xlim(left=1)
+axes[0].set_ylim(bottom=1)
+axes[0].set_xlabel(
+    f"Number of Elements (log scale)\nRuntimes over {int(TIMEOUT / 1e9) // 60} min {int(TIMEOUT / 1e9) % 60} seconds are not displayed"
+)
+axes[0].set_ylabel("Runtime in ms (log scale)")
+axes[0].legend()
+axes[1].text(
+    0.5,
+    0.5,
+    f"Euler law with Numba:\n{numba_overhead:.3f}+{numba_coeff:.3f}*bodies^{numba_pow:.3f}\n\n \
+    Euler law without Numba:\n{euler_coeff:.3f}*bodies^{euler_pow:.3f}\n\n \
+    Barnes-Hut law (theta=0.2):\n{barnes2_coeff:.3f}bodies^{barnes2_pow:.3f}\n\n \
+    Barnes-Hut law (theta=0.5):\n{barnes5_coeff:.3f}bodies^{barnes5_pow:.3f}\n\n \
+    Barnes-Hut law (theta=1):\n{barnes1_coeff:.3f}bodies^{barnes1_pow:.3f}",
+    horizontalalignment="center",
+    verticalalignment="center",
+)
+axes[1].axis("off")
+plt.suptitle("Propagation Step Runtime Scaling Comparison")
 plt.tight_layout()
 plt.savefig("numba_comparison.png")
