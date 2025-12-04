@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-import yaml
 import numpy as np
-from pathlib import Path
+import yaml
+
 from nbody.model.body import Body
 from nbody.utility.generate_bodies import generate_random_bodies
 
@@ -80,7 +81,6 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
             )
             for i, b in enumerate(bodies_data)
         ]
-
 
     return bodies, sim_params
 
