@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from body import Body
+from nbody.model.body import Body
 
 
 def generate_random_bodies(

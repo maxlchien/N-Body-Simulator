@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 import csv
 from datetime import datetime
 
 import numpy as np
 
-from nbody.body import Body
+from nbody.model.body import Body
 
 
 class EulerPropagator:
@@ -19,7 +20,7 @@ class EulerPropagator:
     state_vector_size: int
     states: np.ndarray
 
-    def __init__(self, bodies, params, output_name="nbody_results"):
+    def __init__(self, bodies, params, output_dir, output_name="nbody_results"):
         """
         Initialize the EulerPropagator with bodies and simulation parameters.
 
@@ -47,6 +48,7 @@ class EulerPropagator:
         self.dt = params.get("dt", 1.0)
         self.t_total = params.get("t_total", 1000.0)
         self.num_steps = int(self.t_total / self.dt)
+        self.output_dir = output_dir
         self.output_name = output_name
 
         self.n_bodies = len(bodies)
@@ -148,7 +150,8 @@ class EulerPropagator:
         ]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.output_name}_{timestamp}.csv"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        filename = self.output_dir / f"{self.output_name}_{timestamp}.csv"
 
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
