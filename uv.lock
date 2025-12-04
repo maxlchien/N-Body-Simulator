@@ -429,7 +429,9 @@ nox = [
     { name = "nox-uv" },
 ]
 test = [
+    { name = "numpy" },
     { name = "pytest" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -450,7 +452,11 @@ nox = [
     { name = "nox", specifier = ">=2025.5.1" },
     { name = "nox-uv", specifier = ">=0.6.2" },
 ]
-test = [{ name = "pytest" }]
+test = [
+    { name = "numpy" },
+    { name = "pytest" },
+    { name = "pyyaml" },
+]
 
 [[package]]
 name = "nox"

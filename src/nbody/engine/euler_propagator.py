@@ -20,7 +20,7 @@ class EulerPropagator:
     state_vector_size: int
     states: np.ndarray
 
-    def __init__(self, bodies, params, output_dir, output_name="nbody_results"):
+    def __init__(self, bodies, params, output_dir="results", output_name="nbody_results"):
         """
         Initialize the EulerPropagator with bodies and simulation parameters.
 
