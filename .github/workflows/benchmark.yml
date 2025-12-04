@@ -1,7 +1,4 @@
 on:
-  pull_request:
-    paths-ignore:
-      - 'runtime_benchmark.png'
   workflow_dispatch:
 
 jobs:
