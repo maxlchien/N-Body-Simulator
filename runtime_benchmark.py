@@ -7,10 +7,10 @@ import numpy as np
 from scipy.optimize import curve_fit
 from sklearn.linear_model import LinearRegression
 
-from nbody.barnes_hut import BarnesHutPropagator
-from nbody.body import Body, Body_nb, convert_to_body_nb
-from nbody.EulerPropagator import EulerPropagator
-from nbody.generate_bodies import generate_random_bodies
+from nbody.engine.barnes_hut import BarnesHutPropagator
+from nbody.engine.euler_propagator import EulerPropagator
+from nbody.model.body import Body, Body_nb, convert_to_body_nb
+from nbody.utility.generate_bodies import generate_random_bodies
 
 TIMEOUT = 2e11
 

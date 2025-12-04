@@ -1,5 +1,7 @@
 on:
   pull_request:
+    paths-ignore:
+      - 'runtime_benchmark.png'
   workflow_dispatch:
 
 jobs:
@@ -23,5 +25,5 @@ jobs:
       - name: Commit image
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Add runtime benchmark graph"
+          message: "Add runtime benchmark graph [skip ci]"
           add: "runtime_benchmark.png"
