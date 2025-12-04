@@ -31,3 +31,12 @@ def docs(session: nox.Session) -> None:
             session.run("python", "-m", "http.server", "8000", "-d", "_build/html")
         else:
             print("Unsupported argument to docs")
+
+
+@nox_uv.session(uv_groups=["dev"])
+def benchmark(session: nox.Session) -> None:
+    """
+    Run runtime benchmarks.
+    """
+
+    session.run("uv", "run", "runtime_benchmark.py", *session.posargs)
