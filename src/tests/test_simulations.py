@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from nbody.engine.euler_propagator import EulerPropagator
 from nbody.engine.barnes_hut import BarnesHutPropagator
+from nbody.engine.euler_propagator import EulerPropagator
 from nbody.utility.preprocess import read_simulation_config
 
 
@@ -29,6 +29,7 @@ def test_two_body_orbit_euler():
     for i in range(len(bodies)):
         assert pos_start[i][0] == pytest.approx(pos_end[i][0], abs=1e-3)
         assert pos_start[i][1] == pytest.approx(pos_end[i][1], abs=1e-3)
+
 
 def test_two_body_orbit_barnes_hut():
     """Test a simple two-body circular orbit using a known YAML config with Barnes-Hut."""
