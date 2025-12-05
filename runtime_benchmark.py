@@ -26,9 +26,6 @@ def test_euler(bodies: list[Body] | list[Body_nb], USE_NUMBA: bool):
     # Create propagator and run
     propagator = EulerPropagator(bodies, params, use_numba=USE_NUMBA)
 
-    if USE_NUMBA:
-        propagator.propagate()  # get compilation out of the way, this will get overwritten with the same data
-
     # time the calculation portion
     start_time = time.perf_counter_ns()
     try:
@@ -279,10 +276,10 @@ axes[1].text(
     0.5,
     0.5,
     f"Euler law with Numba:\n{numba_overhead:.3f}+{numba_coeff:.3f}*bodies^{numba_pow:.3f}\n\n \
-    Euler law without Numba:\n{euler_coeff:.3f}*bodies^{euler_pow:.3f}\n\n \
-    Barnes-Hut law (theta=0.2):\n{barnes2_coeff:.3f}bodies^{barnes2_pow:.3f}\n\n \
-    Barnes-Hut law (theta=0.5):\n{barnes5_coeff:.3f}bodies^{barnes5_pow:.3f}\n\n \
-    Barnes-Hut law (theta=1):\n{barnes1_coeff:.3f}bodies^{barnes1_pow:.3f}",
+    Euler law without Numba:\n{np.exp(euler_coeff):.3f}*bodies^{euler_pow:.3f}\n\n \
+    Barnes-Hut law (theta=0.2):\n{np.exp(barnes2_coeff):.3f}bodies^{barnes2_pow:.3f}\n\n \
+    Barnes-Hut law (theta=0.5):\n{np.exp(barnes5_coeff):.3f}bodies^{barnes5_pow:.3f}\n\n \
+    Barnes-Hut law (theta=1):\n{np.exp(barnes1_coeff):.3f}bodies^{barnes1_pow:.3f}",
     horizontalalignment="center",
     verticalalignment="center",
 )
