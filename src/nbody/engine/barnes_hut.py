@@ -310,7 +310,7 @@ class BarnesHutPropagator:
         self.num_steps = int(self.t_total / self.dt)
         self.output_name = output_name
 
-        self.n_bodies = len(bodies)
+        self.n_bodies = len(self.bodies)
         self.state_vector_size = 6  # x, y, vx, vy, ax, ay
 
         # 3D array to store states: time x body x state_vector
@@ -333,9 +333,9 @@ class BarnesHutPropagator:
         start_time = time.perf_counter_ns()
         for step in range(self.num_steps):
             # generate the dyadic tree
-            tree = Tree(bodies)
-            accels = np.zeros([len(bodies), 2])
-            for j, body in enumerate(bodies):
+            tree = Tree(self.bodies)
+            accels = np.zeros([len(self.bodies), 2])
+            for j, body in enumerate(self.bodies):
                 accels[j] = tree.compute_accel(body, self.theta, self.G)
                 if (
                     timeout_ns is not None
@@ -343,7 +343,7 @@ class BarnesHutPropagator:
                 ):
                     msg = f"Timedout after {timeout_ns} ns"
                     raise TimeoutError(msg)
-            for j, body in enumerate(bodies):
+            for j, body in enumerate(self.bodies):
                 # need a second loop because the tree reference current positions/velocities
                 self.states[step, j, 0:2] = body.position
                 self.states[step, j, 2:4] = body.velocity
@@ -364,7 +364,7 @@ class BarnesHutPropagator:
             param_row = [f"G={self.G}", f"dt={self.dt}", f"t_total={self.t_total}"]
             header = ["Iteration", "Time"] + [
                 f"Body {i} {prop} ({axis})"
-                for i in range(1, len(bodies) + 1)
+                for i in range(1, len(self.bodies) + 1)
                 for prop in ("position", "velocity", "acceleration")
                 for axis in ("x", "y")
             ]

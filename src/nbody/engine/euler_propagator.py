@@ -141,13 +141,6 @@ class EulerPropagator:
             self.states[step, :, 2:4] = velocities
             self.states[step, :, 4:6] = acc
 
-        print("num_steps:", self.num_steps)
-        print("positions dtype:", positions.dtype, "positions[0]:", positions[0])
-        print("velocities dtype:", velocities.dtype, "velocities[0]:", velocities[0])
-        acc = self.compute_accelerations(positions)
-        print("acc dtype:", acc.dtype, "acc[0]:", acc[0])
-
-
         return self.states
 
     def write_results(self):
