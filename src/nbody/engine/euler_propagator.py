@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import time
 from datetime import datetime
+from pathlib import Path
 
 import numba
 import numpy as np
@@ -182,7 +183,8 @@ class EulerPropagator:
         -----
         Uses Newtonian point-mass gravity.
         """
-        acc = np.zeros_like(positions)
+
+        acc = np.zeros((self.n_bodies, 2), dtype=float)
         for i in range(self.n_bodies):
             for j in range(self.n_bodies):
                 if i != j:
@@ -235,6 +237,7 @@ class EulerPropagator:
         else:
             state = self._propagate_nonumba(timeout_ns)
         self.states = state
+        return state
 
     def compute_accelerations(
         self,
@@ -287,8 +290,8 @@ class EulerPropagator:
         ]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        filename = self.output_dir / f"{self.output_name}_{timestamp}.csv"
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        filename = Path(self.output_dir) / f"{self.output_name}_{timestamp}.csv"
 
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)

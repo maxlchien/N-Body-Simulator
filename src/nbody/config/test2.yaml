@@ -1,7 +1,7 @@
 simulation:
-  name: "Two-Body Test Euler"
-  engine: "euler"
-  dt: 0.001
+  name: "Two-Body Test Barnes Hut"
+  engine: "barnes_hut"
+  dt: 0.0005
   t_total: 12.5663706144  
   output_dir: "results_test"
   G: 1.0

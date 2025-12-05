@@ -310,7 +310,7 @@ class BarnesHutPropagator:
         self.num_steps = int(self.t_total / self.dt)
         self.output_name = output_name
 
-        self.n_bodies = len(bodies)
+        self.n_bodies = len(self.bodies)
         self.state_vector_size = 6  # x, y, vx, vy, ax, ay
 
         # 3D array to store states: time x body x state_vector
