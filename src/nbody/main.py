@@ -1,10 +1,14 @@
-import yaml
+from __future__ import annotations
+
 from pathlib import Path
 
-from nbody.engine.euler_propagator import EulerPropagator
 from nbody.engine.barnes_hut import BarnesHutPropagator
-from nbody.model.body import Body
+from nbody.engine.euler_propagator import EulerPropagator
 from nbody.utility.preprocess import read_simulation_config
+
+USE_NUMBA = (
+    False  # not helpful until the number of bodies is large due to compilation overhead
+)
 
 
 def main():
@@ -22,7 +26,8 @@ def main():
 
     # Check required fields
     if sim_params.get("timestep") is None or sim_params.get("duration") is None:
-        raise ValueError("Missing 'timestep' or 'duration' in simulation parameters")
+        msg = "Missing 'timestep' or 'duration' in simulation parameters"
+        raise ValueError(msg)
 
     # Select propagator
     if engine_type == "euler":
@@ -30,7 +35,8 @@ def main():
     elif engine_type == "barnes_hut":
         propagator = BarnesHutPropagator(bodies, sim_params, output_dir)
     else:
-        raise ValueError(f"Unknown engine: {engine_type}")
+        msg = f"Unknown engine: {engine_type}"
+        raise ValueError(msg)
 
     # Run simulation
     propagator.propagate()

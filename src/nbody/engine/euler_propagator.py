@@ -1,13 +1,98 @@
 from __future__ import annotations
 
-import os
 import csv
+import time
 from datetime import datetime
 from pathlib import Path
 
+import numba
 import numpy as np
 
-from nbody.model.body import Body
+from nbody.model.body import Body, Body_nb, convert_to_body_nb
+
+# put numba methods outside class
+
+
+@numba.jit(nopython=True, parallel=True)
+def _compute_accelerations_numba(
+    positions: np.ndarray, bodies: list[Body], G: float
+) -> np.ndarray:
+    """
+    Compute gravitational accelerations on all bodies at the current positions due to mutual attraction.
+
+    Parameters
+    ----------
+    positions : np.ndarray, shape (N, 2)
+        Positions of all N bodies in 2D space (x, y).
+
+    Returns
+    -------
+    acc : np.ndarray, shape (N, 2)
+        Accelerations (ax, ay) for each body.
+
+    Raises
+    ------
+    ValueError
+        If `positions` is not shape (N, 2).
+
+    Notes
+    -----
+    Uses Newtonian point-mass gravity.
+    """
+    acc = np.zeros_like(positions)
+    n_bodies = len(bodies)
+    for i in numba.prange(n_bodies):
+        for j in range(
+            n_bodies
+        ):  # can't parallelize this one as easily because we need to sum over it
+            if i != j:
+                r_vec = positions[j] - positions[i]
+                r = np.linalg.norm(r_vec)
+                if r > 0:
+                    acc[i] += G * bodies[j].mass * r_vec / (r**3)
+    return acc
+
+
+@numba.jit(nopython=True)
+def _get_positions_and_velocities(bodies: list[Body]) -> tuple[np.ndarray, np.ndarray]:
+    positions = np.zeros((len(bodies), 2), dtype=np.float64)
+    velocities = np.zeros((len(bodies), 2), dtype=np.float64)
+    for i in range(len(bodies)):
+        positions[i] = bodies[i].position
+        velocities[i] = bodies[i].velocity
+    return positions, velocities
+
+
+@numba.jit(nopython=True)
+def _propagate_numba(
+    bodies: list[Body], dt: float, num_steps: int, state_vector_size: int, G: float
+) -> np.ndarray:
+    """
+    Propagate the system forward in time using forward-Euler integration.
+
+    Returns
+    -------
+    states : np.ndarray, shape (num_steps, n_bodies, 6)
+        Simulated state history. For each time step and each body:
+        [x, y, vx, vy, ax, ay].
+
+    Notes
+    -----
+    This modifies internal state arrays in-place.
+    """
+    positions, velocities = _get_positions_and_velocities(bodies)
+
+    n_bodies = len(bodies)
+    states = np.zeros((num_steps, n_bodies, state_vector_size))
+
+    for step in range(num_steps):
+        acc = _compute_accelerations_numba(positions, bodies, G)
+        velocities += acc * dt
+        positions += velocities * dt
+        states[step, :, 0:2] = positions
+        states[step, :, 2:4] = velocities
+        states[step, :, 4:6] = acc
+    return states
 
 
 class EulerPropagator:
@@ -20,8 +105,16 @@ class EulerPropagator:
     n_bodies: int
     state_vector_size: int
     states: np.ndarray
+    use_numba: bool
 
-    def __init__(self, bodies, params, output_dir="results", output_name="nbody_results"):
+    def __init__(
+        self,
+        bodies: list[Body] | list[Body_nb],
+        params: dict,
+        output_dir: str = "results",
+        output_name: str = "nbody_results",
+        use_numba=False,
+    ):
         """
         Initialize the EulerPropagator with bodies and simulation parameters.
 
@@ -44,7 +137,10 @@ class EulerPropagator:
         -------
         None
         """
-        self.bodies = bodies
+        if use_numba:
+            self.bodies = [convert_to_body_nb(body) for body in bodies]
+        else:
+            self.bodies = bodies
         self.G = params.get("G", 6.6743e-11)
         self.dt = params.get("dt", 1.0)
         self.t_total = params.get("t_total", 1000.0)
@@ -57,8 +153,14 @@ class EulerPropagator:
 
         # 3D array to store states: time × body × state_vector
         self.states = np.zeros((self.num_steps, self.n_bodies, self.state_vector_size))
+        self.use_numba = use_numba
 
-    def compute_accelerations(self, positions):
+    def _compute_accelerations_nonumba(
+        self,
+        positions: np.ndarray,
+        start_ns: int | None = None,
+        timeout_ns: int | None = None,
+    ) -> np.ndarray:
         """
         Compute gravitational accelerations on all bodies at the current positions due to mutual attraction.
 
@@ -85,16 +187,20 @@ class EulerPropagator:
         acc = np.zeros((self.n_bodies, 2), dtype=float)
         for i in range(self.n_bodies):
             for j in range(self.n_bodies):
-                if i == j:
-                    continue
-                r_vec = positions[j] - positions[i]
-                r = np.linalg.norm(r_vec)
-                if r > 0.0:
-                    acc[i] += self.G * (self.bodies[j].mass) * r_vec / (r**3)
+                if i != j:
+                    r_vec = positions[j] - positions[i]
+                    r = np.linalg.norm(r_vec)
+                    if r > 0:
+                        acc[i] += self.G * self.bodies[j].mass * r_vec / (r**3)
+            if (
+                timeout_ns is not None
+                and time.perf_counter_ns() - start_ns > timeout_ns
+            ):
+                msg = f"Timed out after {timeout_ns} ns"
+                raise TimeoutError(msg)
         return acc
 
-
-    def propagate(self):
+    def _propagate_nonumba(self, timeout_ns: int | None = None) -> np.ndarray:
         """
         Propagate the system forward in time using forward-Euler integration.
 
@@ -103,47 +209,50 @@ class EulerPropagator:
         states : np.ndarray, shape (num_steps, n_bodies, 6)
             Simulated state history. For each time step and each body:
             [x, y, vx, vy, ax, ay].
-
-        Notes
-        -----
-        This modifies internal state arrays in-place.
         """
-        # force float dtype explicitly
-        positions = np.array([b.position for b in self.bodies], dtype=float)   # shape (N,2)
-        velocities = np.array([b.velocity for b in self.bodies], dtype=float)  # shape (N,2)
-        dt = float(self.dt)
+        start_time = time.perf_counter_ns()
+        positions = np.array([b.position for b in self.bodies])
+        velocities = np.array([b.velocity for b in self.bodies])
+        dt = self.dt
 
-        # pre-allocate states (already done in __init__)
-        # store initial accelerations
-        acc = self.compute_accelerations(positions)
+        states = np.zeros((self.num_steps, self.n_bodies, self.state_vector_size))
 
-        # store initial state
-        self.states[0, :, 0:2] = positions
-        self.states[0, :, 2:4] = velocities
-        self.states[0, :, 4:6] = acc
+        for step in range(self.num_steps):
+            acc = self._compute_accelerations_nonumba(positions, start_time, timeout_ns)
+            velocities += acc * dt
+            positions += velocities * dt
+            states[step, :, 0:2] = positions
+            states[step, :, 2:4] = velocities
+            states[step, :, 4:6] = acc
 
-        # --- Velocity Verlet integrator (symplectic, good for orbits) ---
-        for step in range(1, self.num_steps):
-            # x_{n+1} = x_n + v_n*dt + 0.5*a_n*dt^2
-            positions = positions + velocities * dt + 0.5 * acc * (dt**2)
+        return states
 
-            # compute new acceleration at x_{n+1}
-            new_acc = self.compute_accelerations(positions)
+    def propagate(self, timeout_ns: int | None = None):
+        if self.use_numba:
+            bodies = self.bodies
+            dt = self.dt
+            num_steps = self.num_steps
+            state_vector_size = self.state_vector_size
+            G = self.G
+            state = _propagate_numba(bodies, dt, num_steps, state_vector_size, G)
+        else:
+            state = self._propagate_nonumba(timeout_ns)
+        self.state = state
+        return state
 
-            # v_{n+1} = v_n + 0.5*(a_n + a_{n+1})*dt
-            velocities = velocities + 0.5 * (acc + new_acc) * dt
+    def compute_accelerations(
+        self,
+        positions: np.ndarray,
+        start_ns: int | None = None,
+        timeout_ns: int | None = None,
+    ):
+        if self.use_numba:
+            bodies = self.bodies
+            G = self.G
+            return _compute_accelerations_numba(positions, bodies, G)
+        return self._compute_accelerations_nonumba(positions, start_ns, timeout_ns)
 
-            # advance acceleration
-            acc = new_acc
-
-            # store state for this step
-            self.states[step, :, 0:2] = positions
-            self.states[step, :, 2:4] = velocities
-            self.states[step, :, 4:6] = acc
-
-        return self.states
-
-    def write_results(self):
+    def write_results(self, header_options=None):
         """
         Write the state history to a timestamped CSV file.
 
@@ -166,7 +275,14 @@ class EulerPropagator:
         dt = self.dt
         num_steps = self.num_steps
 
-        param_row = [f"G={self.G}", f"dt={self.dt}", f"t_total={self.t_total}"]
+        if header_options is None:
+            header_options = []
+        param_row = [
+            f"G={self.G}",
+            f"dt={self.dt}",
+            f"t_total={self.t_total}",
+            *header_options,
+        ]
         headers = ["Iteration", "Time"] + [
             f"Body {i} {prop} ({axis})"
             for i in range(1, self.n_bodies + 1)
@@ -219,6 +335,6 @@ def run_simulation(bodies, params, output_name="nbody_results"):
     > states = run_simulation([Body(...), Body(...)], {'dt':0.01,'t_total':10})
     """
     propagator = EulerPropagator(bodies, params, output_name=output_name)
-    states = propagator.propagate()
+    propagator.propagate()
     propagator.write_results()
-    return states
+    return propagator.states
