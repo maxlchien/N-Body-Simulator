@@ -1,7 +1,7 @@
 simulation:
   name: "Earth-Moon Simulation"
   engine: "euler"
-  timestep: 3600
+  dt: 3600
   t_total: 2592000
   output_dir: "results"
 

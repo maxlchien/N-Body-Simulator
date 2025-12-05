@@ -222,7 +222,6 @@ class EulerPropagator:
             states[step, :, 0:2] = positions
             states[step, :, 2:4] = velocities
             states[step, :, 4:6] = acc
-
         return states
 
     def propagate(self, timeout_ns: int | None = None):
@@ -235,7 +234,7 @@ class EulerPropagator:
             state = _propagate_numba(bodies, dt, num_steps, state_vector_size, G)
         else:
             state = self._propagate_nonumba(timeout_ns)
-        self.state = state
+        self.states = state
 
     def compute_accelerations(
         self,
