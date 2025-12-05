@@ -237,6 +237,18 @@ class EulerPropagator:
             state = self._propagate_nonumba(timeout_ns)
         self.state = state
 
+    def compute_accelerations(
+        self,
+        positions: np.ndarray,
+        start_ns: int | None = None,
+        timeout_ns: int | None = None,
+    ):
+        if self.use_numba:
+            bodies = self.bodies
+            G = self.G
+            return _compute_accelerations_numba(positions, bodies, G)
+        return self._compute_accelerations_nonumba(positions, start_ns, timeout_ns)
+
     def write_results(self, header_options=None):
         """
         Write the state history to a timestamped CSV file.
