@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import csv
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 
@@ -80,15 +81,18 @@ class EulerPropagator:
         -----
         Uses Newtonian point-mass gravity.
         """
-        acc = np.zeros_like(positions)
+
+        acc = np.zeros((self.n_bodies, 2), dtype=float)
         for i in range(self.n_bodies):
             for j in range(self.n_bodies):
-                if i != j:
-                    r_vec = positions[j] - positions[i]
-                    r = np.linalg.norm(r_vec)
-                    if r > 0:
-                        acc[i] += self.G * self.bodies[j].mass * r_vec / (r**3)
+                if i == j:
+                    continue
+                r_vec = positions[j] - positions[i]
+                r = np.linalg.norm(r_vec)
+                if r > 0.0:
+                    acc[i] += self.G * (self.bodies[j].mass) * r_vec / (r**3)
         return acc
+
 
     def propagate(self):
         """
@@ -104,17 +108,45 @@ class EulerPropagator:
         -----
         This modifies internal state arrays in-place.
         """
-        positions = np.array([b.position for b in self.bodies])
-        velocities = np.array([b.velocity for b in self.bodies])
-        dt = self.dt
+        # force float dtype explicitly
+        positions = np.array([b.position for b in self.bodies], dtype=float)   # shape (N,2)
+        velocities = np.array([b.velocity for b in self.bodies], dtype=float)  # shape (N,2)
+        dt = float(self.dt)
 
-        for step in range(self.num_steps):
-            acc = self.compute_accelerations(positions)
-            velocities += acc * dt
-            positions += velocities * dt
+        # pre-allocate states (already done in __init__)
+        # store initial accelerations
+        acc = self.compute_accelerations(positions)
+
+        # store initial state
+        self.states[0, :, 0:2] = positions
+        self.states[0, :, 2:4] = velocities
+        self.states[0, :, 4:6] = acc
+
+        # --- Velocity Verlet integrator (symplectic, good for orbits) ---
+        for step in range(1, self.num_steps):
+            # x_{n+1} = x_n + v_n*dt + 0.5*a_n*dt^2
+            positions = positions + velocities * dt + 0.5 * acc * (dt**2)
+
+            # compute new acceleration at x_{n+1}
+            new_acc = self.compute_accelerations(positions)
+
+            # v_{n+1} = v_n + 0.5*(a_n + a_{n+1})*dt
+            velocities = velocities + 0.5 * (acc + new_acc) * dt
+
+            # advance acceleration
+            acc = new_acc
+
+            # store state for this step
             self.states[step, :, 0:2] = positions
             self.states[step, :, 2:4] = velocities
             self.states[step, :, 4:6] = acc
+
+        print("num_steps:", self.num_steps)
+        print("positions dtype:", positions.dtype, "positions[0]:", positions[0])
+        print("velocities dtype:", velocities.dtype, "velocities[0]:", velocities[0])
+        acc = self.compute_accelerations(positions)
+        print("acc dtype:", acc.dtype, "acc[0]:", acc[0])
+
 
         return self.states
 
@@ -150,8 +182,8 @@ class EulerPropagator:
         ]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        filename = self.output_dir / f"{self.output_name}_{timestamp}.csv"
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        filename = Path(self.output_dir) / f"{self.output_name}_{timestamp}.csv"
 
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)

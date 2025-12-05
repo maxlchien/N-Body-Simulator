@@ -1,23 +1,23 @@
 simulation:
   name: "Two-Body Test"
   engine: "euler"
-  timestep: 0.01
-  t_total: 703   # exactly one period
+  dt: 0.0001
+  t_total: 12.5663706144  
   output_dir: "results_test"
   G: 1.0
 
 bodies:
   list:
     - id: "BodyA"
-      mass: 10.0
-      radius: 1.0
-      position: [-50.0, 0.0]   # orbiting center of mass at x=-r/2
-      velocity: [0.0, -0.4472136]  # perpendicular velocity for circular orbit
+      mass: 1.0
+      radius: 0.1
+      position: [1.0, 0.0]   # orbiting center of mass at x=-r/2
+      velocity: [0.0, 0.5]  # perpendicular velocity for circular orbit
     - id: "BodyB"
-      mass: 10.0
-      radius: 1.0
-      position: [50.0, 0.0]    # x=r/2
-      velocity: [0.0, 0.4472136]
+      mass: 1.0
+      radius: 0.1
+      position: [-1.0, 0.0]    # x=r/2
+      velocity: [0.0, -0.5]
 
 preprocess:
   normalize_positions: false

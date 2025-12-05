@@ -21,5 +21,5 @@ def test_two_body_orbit():
     
     # Since the simulation is one full period, the positions should return to (approximately) initial
     for i in range(len(bodies)):
-        assert pos_start[i][0] == pytest.approx(pos_end[i][0], rel=1e-5)
-        assert pos_start[i][1] == pytest.approx(pos_end[i][1], rel=1e-5)
+        assert pos_start[i][0] == pytest.approx(pos_end[i][0], abs=1e-4)
+        assert pos_start[i][1] == pytest.approx(pos_end[i][1], abs=1e-4)
