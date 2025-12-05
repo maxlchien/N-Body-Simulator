@@ -4,7 +4,6 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.optimize import curve_fit
 from sklearn.linear_model import LinearRegression
 
 from nbody.engine.barnes_hut import BarnesHutPropagator
@@ -25,6 +24,9 @@ def test_euler(bodies: list[Body] | list[Body_nb], USE_NUMBA: bool):
 
     # Create propagator and run
     propagator = EulerPropagator(bodies, params, use_numba=USE_NUMBA)
+
+    if USE_NUMBA:
+        propagator.propagate()  # get compilation out of the way, this will get overwritten with the same data
 
     # time the calculation portion
     start_time = time.perf_counter_ns()
@@ -57,8 +59,8 @@ def test_barnes_hut(bodies: list[Body] | list[Body_nb], theta: float):
     return end_time - start_time
 
 
-# test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000]
-test_numbers = [2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+# test_numbers = [1, 2, 5, 10, 25, 50, 100, 250]
+test_numbers = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 numba_times = []
 euler_times = []
 barnes1_times = []
@@ -126,24 +128,15 @@ barnes2_nanmask = np.isfinite(barnes2_times)
 
 # get scaling laws
 
+# numba law
 
-# euler propagator should be power law plus overhead cost
-def euler_numba_law(x, a, p, b):
-    return a * (x**p) + b
-
-
-lower_bounds = (0, 0, 0)  # negative coefficients are nonphysical
-upper_bounds = (np.inf, np.inf, np.inf)
-
-popt, _ = curve_fit(
-    euler_numba_law,
-    test_numbers,
-    numba_times,
-    p0=[1e-1, 2, 4e2],
-    maxfev=2000,
-    bounds=(lower_bounds, upper_bounds),
+numba_regression = LinearRegression()
+numba_regression.fit(
+    np.log(test_numbers).reshape(-1, 1),
+    np.log(numba_times),
 )
-numba_coeff, numba_pow, numba_overhead = popt
+
+numba_coeff, numba_pow = numba_regression.intercept_, *numba_regression.coef_
 
 # no numba law
 
@@ -194,7 +187,7 @@ axes[0].scatter(test_numbers, barnes2_times, label="Barnes-Hut (theta=0.2)")
 dense = np.logspace(
     np.log(min(test_numbers)), np.log(max(test_numbers)), 1000, base=np.e
 )
-numba_interp = euler_numba_law(dense, numba_coeff, numba_pow, numba_overhead)
+numba_interp = np.exp(numba_regression.predict(np.log(dense).reshape(-1, 1)))
 # numba_interp = numba_overhead + numba_coeff * dense**numba_pow
 
 euler_dense = np.logspace(
@@ -266,7 +259,6 @@ axes[0].plot(
 axes[0].set_xscale("log")
 axes[0].set_yscale("log")
 axes[0].set_xlim(left=1)
-axes[0].set_ylim(bottom=1)
 axes[0].set_xlabel(
     f"Number of Elements (log scale)\nRuntimes over {int(TIMEOUT / 1e9) // 60} min {int(TIMEOUT / 1e9) % 60} seconds are not displayed"
 )
@@ -275,7 +267,7 @@ axes[0].legend()
 axes[1].text(
     0.5,
     0.5,
-    f"Euler law with Numba:\n{numba_overhead:.3f}+{numba_coeff:.3f}*bodies^{numba_pow:.3f}\n\n \
+    f"Euler law with Numba:\n{np.exp(numba_coeff):.3f}*bodies^{numba_pow:.3f}\n\n \
     Euler law without Numba:\n{np.exp(euler_coeff):.3f}*bodies^{euler_pow:.3f}\n\n \
     Barnes-Hut law (theta=0.2):\n{np.exp(barnes2_coeff):.3f}bodies^{barnes2_pow:.3f}\n\n \
     Barnes-Hut law (theta=0.5):\n{np.exp(barnes5_coeff):.3f}bodies^{barnes5_pow:.3f}\n\n \
