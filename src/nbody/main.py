@@ -13,6 +13,7 @@ def main():
     parser.add_argument("--visualize", action="store_true")
     parser.add_argument("--numba", action="store_true")
     parser.add_argument("-i", "--input", default="config/simulation.yaml")
+    parser.add_argument("--output-dir", type=str, required=False, help="Directory to save output results")
     args = parser.parse_args()
 
     visualize = args.visualize
@@ -20,14 +21,22 @@ def main():
     USE_NUMBA = args.numba
     # Path to simulation YAML
     config_path = Path(__file__).parent / input_file
+    # Path to output directory
+    output_dir = None
+    if args.output_dir:
+        output_dir = Path(args.output_dir).expanduser().resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load bodies and simulation parameters from YAML
     bodies, sim_params = read_simulation_config(config_path)
     # Simulation settings
     engine_type = sim_params.get("engine", "euler")
-    output_dir_cfg = sim_params.get("output_dir", "results")
-    output_dir = Path(__file__).parent / output_dir_cfg
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir is not None:
+        pass
+    if output_dir is None:
+        output_dir_cfg = sim_params.get("output_dir", "results")
+        output_dir = Path(__file__).parent / output_dir_cfg
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     # Check required fields
     if sim_params.get("dt") is None or sim_params.get("t_total") is None:

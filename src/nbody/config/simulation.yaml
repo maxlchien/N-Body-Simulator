@@ -1,6 +1,6 @@
 simulation:
   name: "Earth-Moon Simulation"
-  engine: "euler"
+  engine: "barnes_hut"
   dt: 3600
   t_total: 2592000
   output_dir: "results"
