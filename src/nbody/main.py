@@ -39,7 +39,7 @@ def main():
     input_file = args.input
     USE_NUMBA = args.numba
     # Path to simulation YAML
-    config_path = Path(__file__).parent / input_file
+    config_path = Path(input_file)
     # Path to output directory
     output_dir = None
     if args.output_dir:
@@ -54,7 +54,7 @@ def main():
         pass
     if output_dir is None:
         output_dir_cfg = sim_params.get("output_dir", "results")
-        output_dir = Path(__file__).parent / output_dir_cfg
+        output_dir = Path(output_dir_cfg)
         output_dir.mkdir(parents=True, exist_ok=True)
 
     # Check required fields
