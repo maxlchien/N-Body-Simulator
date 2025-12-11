@@ -1,0 +1,23 @@
+simulation:
+  name: "Earth-Moon Simulation"
+  engine: "barnes_hut"
+  dt: 3600
+  t_total: 2592000
+  output_dir: "results"
+
+bodies:
+  list:
+    - id: "Earth"
+      mass: 5.972e24
+      radius: 6371000.0
+      position: [0.0, 0.0]
+      velocity: [0.0, 0.0]
+    - id: "Moon"
+      mass: 7.348e22
+      radius: 1737000.0
+      position: [384400000.0, 0.0]
+      velocity: [0.0, 1022.0]
+
+preprocess:
+  normalize_positions: false
+  normalize_velocities: false
