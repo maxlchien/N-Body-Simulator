@@ -278,4 +278,4 @@ axes[1].text(
 axes[1].axis("off")
 plt.suptitle("Propagation Step Runtime Scaling Comparison")
 plt.tight_layout()
-plt.savefig("runtime_benchmark.png")
+plt.savefig("src/benchmark/runtime_benchmark.png")
