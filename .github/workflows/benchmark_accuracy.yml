@@ -1,0 +1,32 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Benchmark-Accuracy:
+    name: Benchmark Accuracy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install and benchmark package (using nox group)
+        run: |
+          uv sync --group nox
+          uv run nox -s benchmark_accuracy
+        env:
+          PYTHONUNBUFFERED: 1
+      - name: Commit image
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Add accuracy benchmark graph [skip ci]"
+          add: "src/benchmark/accuracy_benchmark.png"
