@@ -1,7 +1,10 @@
+from __future__ import annotations
 
-import re
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+
 
 def csv_processor(csv_file):
     """
@@ -34,7 +37,7 @@ def csv_processor(csv_file):
     FIRST_BODY_PY = 3
     COLS_PER_BODY = 6
 
-    with open(csv_file, "r") as f:
+    with Path.open(csv_file) as f:
         lines = f.readlines()
 
     # Reading in position values for each body
@@ -46,7 +49,6 @@ def csv_processor(csv_file):
     const_vals = lines[0].strip().split(",")
     G = float(const_vals[0].split('=')[-1])
     dt = float(const_vals[1].split('=')[-1])
-    t_total = float(const_vals[2].split('=')[-1])
 
     # Calculating number of bodies in the simulation
     num_cols = len(values[0])

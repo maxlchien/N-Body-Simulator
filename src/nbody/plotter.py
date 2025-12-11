@@ -1,10 +1,11 @@
+from __future__ import annotations
 
-import os
-import numpy as np
-from CSV_processor import csv_processor
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
 from matplotlib.animation import FuncAnimation
+
+from CSV_processor import csv_processor
+
 
 def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     """
@@ -56,7 +57,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
         fontfamily="DejaVu Serif",
     )
     
-    const_text = ax.text(
+    ax.text(
         0,
         1.05,
         f"G = {G}",
@@ -67,9 +68,10 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     )
 
     # Generate N random stars for background
+    rng = np.random.default_rng()
     N_stars = 500
-    star_x = np.random.uniform(-1.1, 1.1, N_stars)
-    star_y = np.random.uniform(-1.1, 1.1, N_stars)
+    star_x = rng.uniform(-1.1, 1.1, N_stars)
+    star_y = rng.uniform(-1.1, 1.1, N_stars)
     ax.scatter(star_x, star_y, color="white", s=1, alpha=0.7, zorder=0)
 
     bodies = []
