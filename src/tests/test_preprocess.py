@@ -1,12 +1,15 @@
-from pathlib import Path
+from __future__ import annotations
+
 import textwrap
+from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
+from nbody.model.body import Body
 from nbody.utility import preprocess
 from nbody.utility.preprocess import read_simulation_config
-from nbody.model.body import Body
 
 
 def test_read_simulation_config(tmp_path: Path):
@@ -75,7 +78,6 @@ def test_read_simulation_config(tmp_path: Path):
 
 
 def test_generate_bodies(monkeypatch, tmp_path: Path):
- 
     yaml_content = textwrap.dedent(
         """
         simulation:
@@ -89,15 +91,24 @@ def test_generate_bodies(monkeypatch, tmp_path: Path):
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml_content)
 
-    generated = [Body(id=f"body_{i}", mass=1.0, radius=1.0,
-                      position=np.zeros(2), velocity=np.zeros(2))
-                 for i in range(3)]
+    generated = [
+        Body(
+            id=f"body_{i}",
+            mass=1.0,
+            radius=1.0,
+            position=np.zeros(2),
+            velocity=np.zeros(2),
+        )
+        for i in range(3)
+    ]
 
     def fake_generate_random_bodies(n):
         assert n == 3
         return generated
 
-    monkeypatch.setattr(preprocess, "generate_random_bodies", fake_generate_random_bodies)
+    monkeypatch.setattr(
+        preprocess, "generate_random_bodies", fake_generate_random_bodies
+    )
 
     bodies, sim_params = read_simulation_config(str(cfg_path))
 
@@ -106,6 +117,7 @@ def test_generate_bodies(monkeypatch, tmp_path: Path):
     assert sim_params["engine"] == "euler"
     assert sim_params["dt"] == 3600
     assert sim_params["t_total"] == 2_592_000
+
 
 def test_filenotfounderror(tmp_path: Path):
     non_existing = tmp_path / "does_not_exist.yaml"
@@ -118,9 +130,7 @@ def test_yamlerror(tmp_path: Path):
     cfg_path = tmp_path / "bad.yaml"
     cfg_path.write_text(bad_yaml)
 
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(yaml.YAMLError) as excinfo:
         read_simulation_config(str(cfg_path))
-
-    import yaml
 
     assert isinstance(excinfo.value, yaml.YAMLError)
