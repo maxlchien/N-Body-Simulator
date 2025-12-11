@@ -86,7 +86,7 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
 
 
 if __name__ == "__main__":
-    config_file = Path(__file__).resolve().parent.parent / "config" / "simulation.yaml"
+    config_file = Path("config/simulation.yaml")
     bodies, sim_params = read_simulation_config(config_file)
     print("Simulation parameters:")
     print(sim_params)

@@ -53,23 +53,22 @@ def csv_processor(csv_file):
     # Calculating number of bodies in the simulation
     num_cols = len(values[0])
     num_bodies = int((num_cols - 2) / COLS_PER_BODY)
-    
+
     values = np.array(values)
-    
+
     # Creating the DataFrame for plotting
     df = pd.DataFrame()
-    df['iteration'] = values[:, 0]
-    df['time'] = values[:, 1]
+    df["iteration"] = values[:, 0]
+    df["time"] = values[:, 1]
 
     x = FIRST_BODY_PX
     y = FIRST_BODY_PY
     body = FIRST_BODY
-    while (y < num_cols):
-        df[f'x{body}'] = values[:, x]
-        df[f'y{body}'] = values[:, y]
+    while y < num_cols:
+        df[f"x{body}"] = values[:, x]
+        df[f"y{body}"] = values[:, y]
         x = x + COLS_PER_BODY
         y = y + COLS_PER_BODY
         body = body + 1
 
     return G, dt, num_bodies, df
-    

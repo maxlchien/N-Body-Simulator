@@ -10,6 +10,7 @@ import numpy as np
 
 from nbody.model.body import Body, Body_nb, convert_to_body_nb
 
+
 # put numba methods outside class
 @numba.jit(nopython=True, parallel=True)
 def _compute_accelerations_numba(
@@ -128,14 +129,12 @@ class EulerPropagator:
 
         # If user did not specify an absolute or external path,
         # default to src/nbody/results directory
-        if output_dir == "results":   # default case
-            base_dir = Path(__file__).resolve().parent.parent  # = src/nbody
-            self.output_dir = base_dir / "results"            # = src/nbody/results
+        if output_dir == "results":  # default case
+            self.output_dir = Path("results")  # = src/nbody/results
         else:
             self.output_dir = Path(output_dir)
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
-
 
         self.output_name = output_name
         self.n_bodies = len(bodies)
@@ -265,7 +264,7 @@ class EulerPropagator:
         ]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+
         # NEW — ensure directory still exists (safe redundancy)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -291,12 +290,8 @@ def run_simulation(bodies, params, output_name="nbody_results", output_dir="resu
     Run an N-body Euler simulation and write results to CSV.
     """
     propagator = EulerPropagator(
-        bodies,
-        params,
-        output_dir=output_dir,
-        output_name=output_name
+        bodies, params, output_dir=output_dir, output_name=output_name
     )
     propagator.propagate()
     propagator.write_results()
     return propagator.states
-

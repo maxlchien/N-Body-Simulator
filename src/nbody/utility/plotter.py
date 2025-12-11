@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-from CSV_processor import csv_processor
+from nbody.utility.CSV_processor import csv_processor
 
 
 def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
@@ -18,7 +18,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     colors : list, optional
         List of colors corresponding to each body.
     save_as : str, optional
-        Output animation filename.
+        Output animation filename.p
     """
 
     G, dt, num_bodies, df = csv_processor(csv_file)
@@ -56,7 +56,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
         fontweight="bold",
         fontfamily="DejaVu Serif",
     )
-    
+
     ax.text(
         0,
         1.05,
@@ -115,8 +115,6 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     )
     plt.close(fig)
 
-
     anim.save(save_as, writer="ffmpeg", fps=50)
 
-    
     return f"Saved animation to {save_as}"
