@@ -54,15 +54,7 @@ for i in range(num_bodies):
 print("reference trace computed")
 
 angular = np.sqrt(
-    np.sum(
-        [
-            1
-            / 4
-            * np.cos(np.pi * i / num_bodies) ** 0
-            * (np.sin(np.pi * i / num_bodies)) ** (-1)
-            for i in range(1, num_bodies)
-        ]
-    )
+    np.sum([1 / 4 / (np.sin(np.pi * i / num_bodies)) for i in range(1, num_bodies)])
 )
 print("forces computed")
 bodies = [
