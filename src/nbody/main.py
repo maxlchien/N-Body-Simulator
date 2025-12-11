@@ -6,11 +6,14 @@ from pathlib import Path
 from nbody.engine.barnes_hut import BarnesHutPropagator
 from nbody.engine.euler_propagator import EulerPropagator
 from nbody.utility.preprocess import read_simulation_config
+from nbody.utility.plotter import plotter
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--visualize", action="store_true")
+    parser.add_argument("--colors", type=str, nargs="+", help="List of colors for plotting each body")
+    parser.add_argument("--plotname", type=str, help="Name of the output video file (must end with .mp4)")
     parser.add_argument("--numba", action="store_true")
     parser.add_argument("-i", "--input", default="config/simulation.yaml")
     parser.add_argument("--output-dir", type=str, required=False, help="Directory to save output results")
@@ -59,14 +62,14 @@ def main():
 
     # Run simulation
     propagator.propagate()
-    propagator.write_results()
+    filename = propagator.write_results()
 
     print(f"Simulation complete. Results saved in {output_dir}")
 
     if visualize:
-        ...
-        #### integrate visualization module here
-
+        colors = args.colors
+        plotname = args.plotname
+        plotter(filename, colors, plotname)
 
 if __name__ == "__main__":
     main()
