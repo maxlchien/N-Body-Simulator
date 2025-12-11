@@ -1,37 +1,120 @@
-from __future__ import annotations
 
+import os
+import numpy as np
+from CSV_processor import csv_processor
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation
 
+def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
+    """
+    Plot an N-body simulation from a CSV file.
 
-def plotter(filename):
-    # Extracting the positions of each body at each time step
-    df = pd.read_csv(filename)
-    bodies = df["bodies"].unique()
-    time = df["time"].unique()
-    data = {}
-    for body in bodies:
-        new_df = df[df["bodies"] == body][["px", "py"]]
-        data[body] = new_df.to_numpy()
+    Parameters
+    ----------
+    csv_file : str
+        The CSV results file (filename).
+    colors : list, optional
+        List of colors corresponding to each body.
+    save_as : str, optional
+        Output animation filename.
+    """
 
-    # Plotting the body in initial state
+    G, dt, num_bodies, df = csv_processor(csv_file)
+
+    # Reset index so animation frames match rows
+    df = df.reset_index(drop=True)
+
+    # Normalize values for visualization
+    scale_list = []
+    for n in range(num_bodies):
+        scale_list.append(df[f"x{n+1}"].abs().max())
+        scale_list.append(df[f"y{n+1}"].abs().max())
+    scale = max(scale_list)
+
+    for n in range(num_bodies):
+        df[f"x{n+1}n"] = df[f"x{n+1}"] / scale
+        df[f"y{n+1}n"] = df[f"y{n+1}"] / scale
+
+    # Setting up plot
+    plt.style.use("dark_background")
     fig, ax = plt.subplots()
-    plots = {}
-    for body in bodies:
-        px_0, py_0 = data[body][0]
-        plots[body] = ax.plot([px_0], [py_0], marker="o")[0]
+    ax.set_aspect("equal", "box")
+    ax.set_xscale("symlog")
+    ax.set_yscale("symlog")
+    ax.set_xlim(-1.1, 1.1)
+    ax.set_ylim(-1.1, 1.1)
+    ax.set_axis_off()
 
-    ax.set_xlim(df["px"].min() - 0.5, df["px"].max() + 0.5)
-    ax.set_ylim(df["py"].min() - 0.5, df["py"].max() + 0.5)
-    ax.set_aspect("equal")
+    title = ax.text(
+        0.70,
+        1.05,
+        "",
+        transform=ax.transAxes,
+        fontsize=12,
+        fontweight="bold",
+        fontfamily="DejaVu Serif",
+    )
+    
+    const_text = ax.text(
+        0,
+        1.05,
+        f"G = {G}",
+        transform=ax.transAxes,
+        fontsize=12,
+        fontweight="bold",
+        fontfamily="DejaVu Serif",
+    )
 
-    # Update for animation
+    # Generate N random stars for background
+    N_stars = 500
+    star_x = np.random.uniform(-1.1, 1.1, N_stars)
+    star_y = np.random.uniform(-1.1, 1.1, N_stars)
+    ax.scatter(star_x, star_y, color="white", s=1, alpha=0.7, zorder=0)
+
+    bodies = []
+    trail = []
+    for n in range(num_bodies):
+        if color is None:
+            bodies.append(ax.scatter([], [], s=150))
+        else:
+            bodies.append(ax.scatter([], [], color=color[n], s=150))
+
+        line, = ax.plot([], [], color="white", linewidth=1)
+        trail.append(line)
+
+    # Updating frames
     def update(frame):
-        for body in bodies:
-            px, py = data[body][frame]
-            plots[body].set_data([px], [py])
-        return list(plots.values())
+        for n in range(num_bodies):
+            bodies[n].set_offsets(
+                [
+                    [
+                        df.iloc[frame][f"x{n+1}n"],
+                        df.iloc[frame][f"y{n+1}n"],
+                    ]
+                ]
+            )
+            trail[n].set_data(
+                df[f"x{n+1}n"][:frame],
+                df[f"y{n+1}n"][:frame],
+            )
+            current_time = frame * dt
+            title.set_text(f"Time = {current_time:.2f}")
 
-    ani = FuncAnimation(fig=fig, func=update, frames=len(time), interval=50, blit=False)
-    ani.save("nbody_animation.mp4", writer="ffmpeg", fps=10)
+        return bodies + trail
+
+    # Animation
+    anim = FuncAnimation(
+        fig,
+        update,
+        frames=len(df),
+        interval=10,
+        blit=False,
+    )
+    plt.close(fig)
+
+
+    anim.save(save_as, writer="ffmpeg", fps=50)
+
+    
+    return f"Saved animation to {save_as}"
