@@ -29,13 +29,13 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     # Normalize values for visualization
     scale_list = []
     for n in range(num_bodies):
-        scale_list.append(df[f"x{n+1}"].abs().max())
-        scale_list.append(df[f"y{n+1}"].abs().max())
+        scale_list.append(df[f"x{n + 1}"].abs().max())
+        scale_list.append(df[f"y{n + 1}"].abs().max())
     scale = max(scale_list)
 
     for n in range(num_bodies):
-        df[f"x{n+1}n"] = df[f"x{n+1}"] / scale
-        df[f"y{n+1}n"] = df[f"y{n+1}"] / scale
+        df[f"x{n + 1}n"] = df[f"x{n + 1}"] / scale
+        df[f"y{n + 1}n"] = df[f"y{n + 1}"] / scale
 
     # Setting up plot
     plt.style.use("dark_background")
@@ -82,7 +82,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
         else:
             bodies.append(ax.scatter([], [], color=color[n], s=150))
 
-        line, = ax.plot([], [], color="white", linewidth=1)
+        (line,) = ax.plot([], [], color="white", linewidth=1)
         trail.append(line)
 
     # Updating frames
@@ -91,14 +91,14 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
             bodies[n].set_offsets(
                 [
                     [
-                        df.iloc[frame][f"x{n+1}n"],
-                        df.iloc[frame][f"y{n+1}n"],
+                        df.iloc[frame][f"x{n + 1}n"],
+                        df.iloc[frame][f"y{n + 1}n"],
                     ]
                 ]
             )
             trail[n].set_data(
-                df[f"x{n+1}n"][:frame],
-                df[f"y{n+1}n"][:frame],
+                df[f"x{n + 1}n"][:frame],
+                df[f"y{n + 1}n"][:frame],
             )
             current_time = frame * dt
             title.set_text(f"Time = {current_time:.2f}")
