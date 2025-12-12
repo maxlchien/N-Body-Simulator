@@ -693,6 +693,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "matplotlib" },
+    { name = "pytest" },
     { name = "scikit-learn" },
 ]
 docs = [
@@ -724,6 +725,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "matplotlib" },
+    { name = "pytest", specifier = ">=8.4.2" },
     { name = "scikit-learn" },
 ]
 docs = [
