@@ -1,4 +1,12 @@
 ### Note: Instead of SI units, (AU, M_sun and yrs have been used)
+simulation:
+  name: "Earth to Mars Hohmann (toy heliocentric) + Jupiter"
+  engine: "euler"
+  dt: 0.0002
+  t_total: 0.72
+  output_dir: "results"
+  G: 39.47841760435743   # 4*pi^2 (AU^3 / yr^2 / Msun)
+
 bodies:
   list:
     - id: "Sun"
@@ -13,12 +21,14 @@ bodies:
       position: [1.0, 0.0]
       velocity: [0.0, 6.283185307179586]
 
+    # Mars phased so the probe reaches it near transfer apoapsis (toy circular orbit)
     - id: "Mars"
       mass: 3.227e-7
       radius: 2.266e-5
       position: [1.089644, 1.058084]
       velocity: [-3.533060, 3.640626]
 
+    # Jupiter included as a perturbing body
     - id: "Jupiter"
       mass: 9.545e-4
       radius: 0.0004779
@@ -30,3 +40,7 @@ bodies:
       radius: 1.0e-6
       position: [1.00005, 0.0]
       velocity: [0.0, 6.904377843695958]
+
+preprocess:
+  normalize_positions: false
+  normalize_velocities: false
