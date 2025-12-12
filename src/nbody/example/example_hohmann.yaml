@@ -1,0 +1,32 @@
+### Note: Instead of SI units, (AU, M_sun and yrs have been used)
+bodies:
+  list:
+    - id: "Sun"
+      mass: 1.0
+      radius: 0.00465
+      position: [0.0, 0.0]
+      velocity: [0.0, 0.0]
+
+    - id: "Earth"
+      mass: 3.003e-6
+      radius: 4.2635e-5
+      position: [1.0, 0.0]
+      velocity: [0.0, 6.283185307179586]
+
+    - id: "Mars"
+      mass: 3.227e-7
+      radius: 2.266e-5
+      position: [1.089644, 1.058084]
+      velocity: [-3.533060, 3.640626]
+
+    - id: "Jupiter"
+      mass: 9.545e-4
+      radius: 0.0004779
+      position: [5.2044, 0.0]
+      velocity: [0.0, 2.7550]
+
+    - id: "Probe"
+      mass: 1.0e-15
+      radius: 1.0e-6
+      position: [1.00005, 0.0]
+      velocity: [0.0, 6.904377843695958]
