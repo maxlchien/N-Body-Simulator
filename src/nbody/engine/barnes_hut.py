@@ -355,28 +355,27 @@ class BarnesHutPropagator:
 
     def write_results(self):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.output_name}_{timestamp}.csv"
-        path = Path(filename)
-        path.parent.mkdir(exist_ok=True, parents=True)
-        with path.open("w", newline="") as f:
+        output_dir = Path(self.output_name).expanduser()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = output_dir / f"barnes_hut_results_{timestamp}.csv"
+
+        with filename.open("w", newline="") as f:
             writer = csv.writer(f)
-            # The header line
             param_row = [f"G={self.G}", f"dt={self.dt}", f"t_total={self.t_total}"]
             header = ["Iteration", "Time"] + [
                 f"Body {i} {prop} ({axis})"
-                for i in range(1, len(self.bodies) + 1)
-                for prop in ("position", "velocity", "acceleration")
-                for axis in ("x", "y")
+                for i in range(1, len(self.bodies)+1)
+                for prop in ("position","velocity","acceleration")
+                for axis in ("x","y")
             ]
             writer.writerow(param_row)
             writer.writerow(header)
-
             for step in range(self.num_steps):
-                row = [
-                    step,
-                    step * self.dt,
-                ]
+                row = [step, step * self.dt]
                 for b in range(self.n_bodies):
                     row.extend(self.states[step, b, :])
                 writer.writerow(row)
-        return filename
+
+        print(f"Results written to {filename}")
+        return str(filename)

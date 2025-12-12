@@ -34,9 +34,18 @@ def docs(session: nox.Session) -> None:
 
 
 @nox_uv.session(uv_groups=["dev"])
-def benchmark(session: nox.Session) -> None:
+def benchmark_runtime(session: nox.Session) -> None:
     """
     Run runtime benchmarks.
     """
 
-    session.run("uv", "run", "runtime_benchmark.py", *session.posargs)
+    session.run("uv", "run", "src/benchmark/runtime_benchmark.py", *session.posargs)
+
+
+@nox_uv.session(uv_groups=["dev"])
+def benchmark_accuracy(session: nox.Session) -> None:
+    """
+    Run accuracy benchmarks.
+    """
+
+    session.run("uv", "run", "src/benchmark/accuracy_benchmark.py", *session.posargs)

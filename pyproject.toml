@@ -14,7 +14,9 @@ dependencies = [
     "PyYAML>=6.0",
     "numpy>=1.27",
     "numba",
-    "scipy"
+    "scipy",
+    "pandas",
+    "matplotlib"
 ]
 
 [project.scripts]
@@ -83,5 +85,6 @@ isort.required-imports = ["from __future__ import annotations"]
 "src/nbody/engine/euler_propagator.py" = ["T201", "PTH123", "RUF003"]
 "src/nbody/main.py" = ["T201"]
 "src/nbody/model/body.py" = ["EM101"]
-"runtime_benchmark.py" = ["T201"]
+"src/benchmark/runtime_benchmark.py" = ["T201"]
+"src/benchmark/accuracy_benchmark.py" = ["T201"]
 "noxfile.py" = ["T201"]
