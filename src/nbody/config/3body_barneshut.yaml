@@ -1,0 +1,31 @@
+simulation:
+  name: "Three-Body Barnes Hut Test"
+  engine: "barnes_hut"
+  dt: 0.0005
+  t_total: 8.26765265996
+  output_dir: "results_triangle_test"
+  G: 1.0
+
+bodies:
+  list:
+    - id: "BodyA"
+      mass: 1.0
+      radius: 0.1
+      position: [1.0, 0.0]
+      velocity: [0.0, 0.75983568565]
+
+    - id: "BodyB"
+      mass: 1.0
+      radius: 0.1
+      position: [-0.5, 0.86602540378]
+      velocity: [-0.65803700648, -0.37991784283]
+
+    - id: "BodyC"
+      mass: 1.0
+      radius: 0.1
+      position: [-0.5, -0.86602540378]
+      velocity: [0.65803700648, -0.37991784283]
+
+preprocess:
+  normalize_positions: false
+  normalize_velocities: false

@@ -73,7 +73,7 @@ def read_simulation_config(filename: str) -> tuple[list[Body], dict[str, Any]]:
     else:
         bodies = [
             Body(
-                id=b.get("id", f"Body{i}"),
+                id=b.get("id", f"Body {i}"),
                 mass=float(b["mass"]),
                 radius=float(b["radius"]),
                 position=np.array(b["position"], dtype=float),

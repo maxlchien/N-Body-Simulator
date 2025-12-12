@@ -684,13 +684,14 @@ source = { editable = "." }
 dependencies = [
     { name = "numba" },
     { name = "numpy" },
-    { name = "scipy" },
     { name = "pyyaml" },
+    { name = "scipy" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "matplotlib" },
+    { name = "pytest" },
     { name = "scikit-learn" },
 ]
 docs = [
@@ -712,14 +713,15 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "numba" },
-    { name = "scipy" },
     { name = "numpy", specifier = ">=1.27" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "scipy" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "matplotlib" },
+    { name = "pytest", specifier = ">=8.4.2" },
     { name = "scikit-learn" },
 ]
 docs = [

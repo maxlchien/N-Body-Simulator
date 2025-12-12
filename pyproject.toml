@@ -33,7 +33,11 @@ PYTHONPATH = "src"
 [dependency-groups]
 test = ["pytest", "numpy", "pyYAML"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-markdown-builder"]
-dev = ["matplotlib", "scikit-learn"]
+dev = [
+    "matplotlib",
+    "pytest>=8.4.2",
+    "scikit-learn",
+]
 nox = [
     "nox>=2025.5.1",
     "nox-uv>=0.6.2",

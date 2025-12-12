@@ -1,0 +1,33 @@
+simulation:
+  name: "Three-Body Equilateral Triangle Test"
+  engine: "euler"
+  dt: 0.0005
+  # One full period for the Lagrange equilateral solution with G=1, m=1, r=1:
+  # T = 2*pi*3^(1/4) ≈ 8.26765265996
+  t_total: 8.26765265996
+  output_dir: "results_triangle_test"
+  G: 1.0
+
+bodies:
+  list:
+    - id: "BodyA"
+      mass: 1.0
+      radius: 0.1
+      position: [1.0, 0.0]
+      velocity: [0.0, 0.75983568565]
+
+    - id: "BodyB"
+      mass: 1.0
+      radius: 0.1
+      position: [-0.5, 0.86602540378]
+      velocity: [-0.65803700648, -0.37991784283]
+
+    - id: "BodyC"
+      mass: 1.0
+      radius: 0.1
+      position: [-0.5, -0.86602540378]
+      velocity: [0.65803700648, -0.37991784283]
+
+preprocess:
+  normalize_positions: false
+  normalize_velocities: false
