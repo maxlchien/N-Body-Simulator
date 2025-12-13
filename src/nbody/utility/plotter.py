@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
@@ -7,7 +9,7 @@ from matplotlib.animation import FuncAnimation
 from nbody.utility.CSV_processor import csv_processor
 
 
-def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
+def plotter(csv_file, color=None, save_as="nbody_animation"):
     """
     Plot an N-body simulation from a CSV file.
 
@@ -22,6 +24,18 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     """
 
     G, dt, num_bodies, df = csv_processor(csv_file)
+
+    if color is not None:
+        if not isinstance(color, list):
+            error = "color must be a list"
+            raise TypeError(error)
+
+        if len(color) != num_bodies:
+            error = f"color must have length {num_bodies}, got {len(color)}"
+            raise ValueError(error)
+
+    # Ensuring output is in same directory as results file
+    output_file = Path(save_as).with_suffix(".mp4")
 
     # Reset index so animation frames match rows
     df = df.reset_index(drop=True)
@@ -115,6 +129,6 @@ def plotter(csv_file, color=None, save_as="nbody_animation.mp4"):
     )
     plt.close(fig)
 
-    anim.save(save_as, writer="ffmpeg", fps=50)
+    anim.save(output_file, writer="ffmpeg", fps=50)
 
     return f"Saved animation to {save_as}"
