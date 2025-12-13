@@ -35,8 +35,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation"):
             raise ValueError(error)
 
     # Ensuring output is in same directory as results file
-    output_dir = (Path(csv_file)).parent
-    output_file = (output_dir / save_as).with_suffix(".mp4")
+    output_file = Path(save_as).with_suffix(".mp4")
 
 
     # Reset index so animation frames match rows
