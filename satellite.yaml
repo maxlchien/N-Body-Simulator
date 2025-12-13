@@ -1,0 +1,45 @@
+simulation:
+  name: "Earth + 4 satellites"
+  engine: "euler"
+  dt: 0.1           
+  t_total: 20   
+  output_dir: "results"
+  G: 6.67430e-11    # m^3 / kg / s^2
+
+bodies:
+  list:
+    - id: "Earth"
+      mass: 5.972e24
+      radius: 6.371e6
+      position: [0.0, 0.0]
+      velocity: [0.0, 0.0]
+
+    # Satellites in circular orbit around Earth
+    - id: "Sat1"
+      mass: 1000
+      radius: 1
+      position: [7.0e6, 0.0]   
+      velocity: [0.0, 7546.05] 
+
+    - id: "Sat2"
+      mass: 1000
+      radius: 1
+      position: [8.0e6, 0.0]   
+      velocity: [0.0, 6994.25] 
+
+    - id: "Sat3"
+      mass: 1000
+      radius: 1
+      position: [9.0e6, 0.0]   
+      velocity: [0.0, 6514.60] 
+
+    # Colliding satellite
+    - id: "Collider"
+      mass: 1000
+      radius: 1
+      position: [7.0e6, -1000]          
+      velocity: [100.0, 7546.05]        
+
+preprocess:
+  normalize_positions: false
+  normalize_velocities: false
