@@ -25,7 +25,7 @@ def plotter(csv_file, color=None, save_as="nbody_animation"):
 
     G, dt, num_bodies, df = csv_processor(csv_file)
 
-    if(color is not None):
+    if color is not None:
         if not isinstance(color, list):
             error = "color must be a list"
             raise TypeError(error)
@@ -36,7 +36,6 @@ def plotter(csv_file, color=None, save_as="nbody_animation"):
 
     # Ensuring output is in same directory as results file
     output_file = Path(save_as).with_suffix(".mp4")
-
 
     # Reset index so animation frames match rows
     df = df.reset_index(drop=True)
