@@ -291,7 +291,7 @@ class BarnesHutPropagator:
         self,
         bodies: list[Body],
         params: dict | None,
-        output_name: str = "OUTPUT_FILES/traces.csv",
+        output_name: str = "results",
     ):
         """
         Arguments:
@@ -365,9 +365,9 @@ class BarnesHutPropagator:
             param_row = [f"G={self.G}", f"dt={self.dt}", f"t_total={self.t_total}"]
             header = ["Iteration", "Time"] + [
                 f"Body {i} {prop} ({axis})"
-                for i in range(1, len(self.bodies)+1)
-                for prop in ("position","velocity","acceleration")
-                for axis in ("x","y")
+                for i in range(1, len(self.bodies) + 1)
+                for prop in ("position", "velocity", "acceleration")
+                for axis in ("x", "y")
             ]
             writer.writerow(param_row)
             writer.writerow(header)
