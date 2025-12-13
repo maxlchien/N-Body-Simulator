@@ -5,13 +5,23 @@ The **nbody** package is a Python-based framework that handles the forward propa
 
 ## Installation:
 
-Copy the repository to your local environment and run
+Copy the repository to your local environment via
+```
+git clone https://github.com/maxlchien/N-Body-Simulator/
+cd N-Body-Simulator
+```
+To install with pip:
 ```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt #add -e flag for editability
-pytest
 ```
+With uv:
+```
+uv venv
+uv pip install nbody
+```
+
 ## File Layout
 nbody/
   model/
@@ -61,7 +71,11 @@ Beyond the testing suite, we provide a more advanced scenario in which the N-Bod
 
 In order to test this example, simply run:
 ```
-python scripts/hohmann.py
+python src/nbody/example/hohmann.py
+```
+or
+```
+uv run src/nbody/example/hohmann.py
 ```
 Output:
 Earth → Mars Hohmann transfer result
